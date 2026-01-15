@@ -1,0 +1,21 @@
+[project]
+name = "weld-pipeline"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "howardat",email = "olzhas.nurzhanovich.kakimzhanov@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "ultralytics (>=8.4.2,<9.0.0)",
+    "numpy (>=2.4.1,<3.0.0)",
+    "scikit-image (>=0.26.0,<0.27.0)"
+]
+
+[tool.poetry]
+packages = [{include = "weld_pipeline", from = "src"}]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

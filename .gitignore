@@ -1,0 +1,24 @@
+# --- Poetry & Environment ---
+# NEVER commit the virtual environment itself
+.venv/
+virtualenvs/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# --- Python & System ---
+__pycache__/
+*.py[cod]
+.DS_Store
+
+# --- Project Specific (Weights & Images) ---
+# Keep the folders but ignore the heavy files
+models/*.pt
+models/*.onnx
+data/
+results/
+runs/
+
+# Ignore local images used for testing
+*.jpg
+*.png
+*.jpeg
