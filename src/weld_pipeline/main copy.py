@@ -7,7 +7,7 @@ from weld_pipeline.detector import WeldDetector, refine_mask
 from weld_pipeline.utils import get_bounding_box_from_mask, deduplicate_masks
 from weld_pipeline.visualizer import plot_weld_results
 
-def main(image_path, model_path, pad=20, min_area_ratio=0.05):
+def run_pipeline(image_path, model_path, pad=20, min_area_ratio=0.05):
     # 1. Initialization
     image = np.array(Image.open(image_path))
     detector = WeldDetector(model_path)
@@ -66,4 +66,4 @@ if __name__ == "__main__":
     IMG_IN = "../../data/zoom.jpg"
     MODEL_IN = "../../models/best.pt"
     
-    main(IMG_IN, MODEL_IN)
+    run_pipeline(IMG_IN, MODEL_IN)
