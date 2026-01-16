@@ -4,6 +4,7 @@
 virtualenvs/
 pip-log.txt
 pip-delete-this-directory.txt
+poetry.lock
 
 # --- Python & System ---
 __pycache__/
