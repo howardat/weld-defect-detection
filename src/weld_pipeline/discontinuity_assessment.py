@@ -2,17 +2,35 @@ from PIL import Image
 from ultralytics import YOLO
 import cv2
 import numpy as np
+import pandas as pd
+import seaborn as sns
 
 from skimage.morphology import skeletonize
 import matplotlib.pyplot as plt
 from skimage.util import invert
 
 def discontinuity_assessment(image_path: str, model_path: str, padding: int = 30):
-    copped_welds = crop_weld(image_path, model_path, padding, show=True)
-    all_masks_list = []
-    for weld in copped_welds:
-        all_masks_list += intensity_filtering(weld, model_path)       
-    fit_function(all_masks_list)
+    cropped_welds = crop_weld(image_path, model_path, padding, show=False)
+    all_data = [] # To store (crop, mask, skeleton, line_params)
+
+    for weld in cropped_welds:
+        # Step 2: Get Masks for this crop
+        masks = intensity_filtering(weld, model_path)
+        
+        if masks:
+            for mask in masks:
+                # Step 3: Get Skeleton and Fit Line
+                m, c, skeleton = fit_skeleton(mask)
+                all_data.append({
+                    'crop': np.array(weld),
+                    'mask': mask,
+                    'skeleton': skeleton,
+                    'm': m,
+                    'c': c
+                })
+    
+    # Step 4: Final Visualization
+    visualize(all_data)
 
 def crop_weld(image_path: str, model_path: str, padding: int = 20, show: bool = True):
     # Crop weld and get crop mask and add padding
@@ -92,40 +110,72 @@ def intensity_filtering(crop, model_path: str):
             mask_list.append(individual_mask)
 
     #Visualization
-    visualization = cv2.cvtColor(crop_matrix, cv2.COLOR_RGB2BGR)
+    # visualization = cv2.cvtColor(crop_matrix, cv2.COLOR_RGB2BGR)
 
-    colored_mask = np.zeros_like(visualization)
-    for i in range(len(mask_list)):
-        colored_mask[mask_list[i] > 0] = [0, 0, 255]
+    # colored_mask = np.zeros_like(visualization)
+    # for i in range(len(mask_list)):
+    #     colored_mask[mask_list[i] > 0] = [0, 0, 255]
 
-    alpha = 1
-    beta = 0.3
-    overlay = cv2.addWeighted(visualization, alpha, colored_mask, beta, 0)
+    # alpha = 1
+    # beta = 0.3
+    # overlay = cv2.addWeighted(visualization, alpha, colored_mask, beta, 0)
 
-    cv2.imshow('Weld Overlay', overlay)
-    cv2.waitKey(0)
+    # cv2.imshow('Weld Overlay', overlay)
+    # cv2.waitKey(0)
 
     return mask_list
 
-def fit_function(mask_list):
+def fit_skeleton(mask):
+    image = invert(mask)
+    skeleton = skeletonize(image)
+    y_coords, x_coords = np.where(skeleton > 0)
+    if len(x_coords) > 1:
+        m, c = np.polyfit(x_coords, y_coords, 1)
+        return m, c, skeleton
+    return None, None, skeleton
 
-    for i, mask in enumerate(mask_list):
-        image = invert(mask)
+def visualize(all_data):
+    if not all_data:
+        print("No data to visualize.")
+        return
 
-        # perform skeletonization
-        skeleton = skeletonize(image)
+    num_samples = len(all_data)
+    # Create a grid: 3 stages (Crop, Mask, Fit) for every detected discontinuity
+    fig, axes = plt.subplots(num_samples, 3, figsize=(8, 1 * num_samples), squeeze=False)
 
-        # display results
-        fig, axes = plt.subplots(nrows=1, ncols=len(mask_list), figsize=(8, 4), sharex=True, sharey=True)
+    for i, data in enumerate(all_data):
+        h, w = data['mask'].shape
+        
+        # Column 1: Original Crop
+        axes[i, 0].imshow(data['crop'])
+        axes[i, 0].set_title(f"Sample {i}: Original Crop")
+        axes[i, 0].axis('off')
 
-        ax = axes.ravel()
+        # Column 2: Filtered Binary Mask
+        axes[i, 1].imshow(data['mask'], cmap='gray')
+        axes[i, 1].set_title("Intensity Filtered Mask")
+        axes[i, 1].axis('off')
 
-        ax[i].imshow(skeleton, cmap=plt.cm.gray)
-        ax[i].axis('off')
-        ax[i].set_title('skeleton', fontsize=20)
+        # Column 3: Skeleton + Extended Linear Fit
+        axes[i, 2].imshow(data['skeleton'], cmap='gray')
+        
+        if data['m'] is not None:
+            # Calculate line points at image edges
+            x_vals = np.array([0, w])
+            y_vals = data['m'] * x_vals + data['c']
+            
+            axes[i, 2].plot(x_vals, y_vals, color='red', linewidth=2, label='Linear Fit')
+            # Clip the plot to image dimensions
+            axes[i, 2].set_xlim(0, w)
+            axes[i, 2].set_ylim(h, 0)
+            
+        axes[i, 2].set_title(f"Skeleton & Full-Image Fit\ny={data['m']:.2f}x+{data['c']:.2f}")
+        axes[i, 2].axis('off')
 
-    fig.tight_layout()
+    plt.tight_layout()
     plt.show()
+
+
 
 if __name__ == "__main__":
     discontinuity_assessment("../../data/zoom.jpg", "../../models/best.pt")
