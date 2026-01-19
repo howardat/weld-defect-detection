@@ -1,21 +1,33 @@
 [project]
 name = "weld-pipeline"
 version = "0.1.0"
-description = ""
+description = "Weld inspection pipeline with YOLO and Gemma-3"
 authors = [
-    {name = "howardat",email = "olzhas.nurzhanovich.kakimzhanov@gmail.com"}
+    {name = "howardat", email = "olzhas.nurzhanovich.kakimzhanov@gmail.com"}
 ]
 readme = "README.md"
-requires-python = ">=3.13"
+# This range allows 3.11 and 3.12, which satisfies all your libs
+requires-python = ">=3.11,<3.13"
+
 dependencies = [
-    "ultralytics (>=8.4.2,<9.0.0)",
-    "numpy (>=2.4.1,<3.0.0)",
-    "scikit-image (>=0.26.0,<0.27.0)"
+    "ultralytics>=8.3.0",
+    "numpy>=1.26.0",
+    "scikit-image>=0.24.0",
+    "seaborn>=0.13.2",
+    "pandas>=2.2.0",
+    "torch>=2.4.0",
+    "torchvision>=0.19.0",
+    "transformers>=4.45.0",
+    "accelerate>=0.34.0",
+    "bitsandbytes>=0.43.0",
+    "pillow>=10.4.0",
+    "opencv-python>=4.10.0"
 ]
 
 [tool.poetry]
-packages = [{include = "weld_pipeline", from = "src"}]
+# Keep this for Poetry 2.0 package discovery
+packages = [{ include = "weld_pipeline", from = "src" }]
 
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
+requires = ["poetry-core>=2.0.0"]
 build-backend = "poetry.core.masonry.api"
