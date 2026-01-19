@@ -10,44 +10,63 @@ class WeldAuditor:
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.dtype = torch.bfloat16
         
-        # 4-bit Quantization for VRAM efficiency
         bnb_config = BitsAndBytesConfig(
             load_in_4bit=True,
             bnb_4bit_compute_dtype=self.dtype,
             bnb_4bit_quant_type="nf4"
         )
         
-        self.processor = AutoProcessor.from_pretrained(model_id, trust_remote_code=True)
+        self.processor = AutoProcessor.from_pretrained(
+            model_id, 
+            trust_remote_code=True, 
+            use_fast=True 
+        )
         self.model = Gemma3ForConditionalGeneration.from_pretrained(
             model_id,
             quantization_config=bnb_config,
-            device_map="auto",
+            device_map={"": 0}, 
             trust_remote_code=True,
-            torch_dtype=self.dtype,
+            dtype=self.dtype, # Using 'dtype' instead of 'torch_dtype'
             attn_implementation="sdpa"
         )
 
         self.system_prompt = (
-            "You are a highly experienced welding inspector AI. Your task is to provide a detailed, "
-            "descriptive assessment of the weld image based on three key criteria.\n\n"
-            "The output must be a concise report, formatted with only the main section headings and the "
-            "combined assessment text. DO NOT use sub-headings like 'Description' or 'Conclusion' under each section. "
-            "The goal is a highly readable report.\n\n"
-            "1. Welding Bead Continuity (Start-to-End Consistency)\n"
-            "Provide a combined assessment on the weld bead's consistency, noting interruptions, starts/stops, "
-            "or profile variations. If you find discontinuities in input data, consider it a gap and the weld cannot be accepted.\n\n"
-            "2. Density of Pores (Porosity Assessment)\n"
-            "Provide a combined assessment on the presence and severity of pores. Classify density (None, Low, Moderate, High) "
-            "and describe distribution.\n\n"
-            "3. Relief of the Weld (Smoothness/Bumps)\n"
-            "Provide a combined assessment on the weld surface topography, describing its smoothness or the presence of "
-            "excessive bumps, unevenness, or sharp transitions.\n\n"
-            "Provide a final overall conclusion on the quality.\n\n"
-            "Rules:\n"
+            "You are a Senior Welding Inspector. Your task is to provide a technical assessment and "
+            "quality level for a weld based on ISO 5817 quality levels (B: Stringent, C: Intermediate, D: Moderate).\n\n"
+            
+            "CRITICAL SAFETY RULE:\n"
+            "If 'SCAN_RESULTS' indicate a 'Continuity Status: FAIL' or any 'CRACK' is detected, "
+            "the Overall quality level is 'F (FAIL)' regardless of other findings.\n\n"
+
+            "STRUCTURE YOUR RESPONSE AS FOLLOWS:\n"
+            "ASSESSMENT:\n"
+            "1. Welding Bead Continuity\n"
+            "[Text assessment] | Quality level: [A-F]\n\n"
+            
+            "2. Density of Pores (Porosity)\n"
+            "[Text assessment based on ISO grade/size] | Quality level: [A-F]\n\n"
+            
+            "3. Relief of the Weld (Topography)\n"
+            "[Text assessment of smoothness/bumps] | Quality level: [A-F]\n\n"
+            
+            "FINAL CONCLUSION:\n"
+            "Overall ISO Quality Quality level: [A-F] determined by the lowest quality level score mentioned\n\n"
+
+            "RULES:\n"
+            "- If SCAN_RESULTS provide an 'ISO-Grade', use it to determine the score.\n"
             "- Start directly with 'ASSESSMENT:'.\n"
-            "- Do not use conversational filler or disclaimers.\n"
-            "- Do not add recommendations or extra info not found in the scan data."
+            "- Be concise. No filler. No recommendations."
         )
+
+    def run_single_audit(self, image_path, json_path):
+        """Runs both inferences and returns them as strings for main.py."""
+        print(f"--- Running Visual-Only Report ---")
+        report_visual = self.generate_inference(image_path, json_path=None)
+        
+        print(f"--- Running Grounded ISO Report ---")
+        report_grounded = self.generate_inference(image_path, json_path=json_path)
+        
+        return report_visual, report_grounded
 
     def _load_json_context(self, json_path: Path):
         """Formats your specific cleaned JSON (bbox, size, grade) for Gemma."""

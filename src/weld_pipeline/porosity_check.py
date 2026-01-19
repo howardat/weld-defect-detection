@@ -123,7 +123,7 @@ def porosity_check(image_path: str,
             "grade": p["grade"]
         })
     
-    return final_output
+    return final_output, pore_entries
 
 if __name__ == '__main__':
     results = porosity_check(

@@ -123,6 +123,9 @@ def discontinuity_check(image_path: str,
 
     # Linear Comparisons & Scoring
     found_discontinuity = False
+    if len(line_params) < 2:
+        return False, [], []
+    
     print("\n--- Linear Function Similarity Comparisons ---")
     for i in range(len(line_params)):
         for j in range(i + 1, len(line_params)):
@@ -197,7 +200,7 @@ def discontinuity_check(image_path: str,
         plt.tight_layout()
         plt.show()
 
-    return found_discontinuity
+    return found_discontinuity, all_masks, line_params
 
 if __name__ == '__main__':
     # Usage
