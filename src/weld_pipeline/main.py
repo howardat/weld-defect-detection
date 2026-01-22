@@ -45,7 +45,7 @@ def main():
         visualize=True
     )
 
-    is_violation, porosity_data = porosity_check(
+    clean_json_list, raw_pore_data = porosity_check(
         image_path=str(target_image), 
         model_path=str(MODEL_PATH), 
         px_to_mm=0.105, 
@@ -57,7 +57,7 @@ def main():
         model_path=str(MODEL_PATH)
     )
 
-    final_json = has_discontinuity + all_crack_detections + is_violation
+    final_json = has_discontinuity + all_crack_detections + clean_json_list
     for item in final_json:
         item.pop('confidence', None)
         item.pop('class', None)
@@ -87,7 +87,7 @@ def main():
         line_params=line_params, 
         discontinuity_masks=refined_masks, 
         weld_mask=None, 
-        porosity_data=porosity_data,
+        porosity_data=raw_pore_data,
         crack_masks=crack_masks_list
     )
 

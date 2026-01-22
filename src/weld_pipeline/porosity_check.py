@@ -101,13 +101,13 @@ def porosity_check(image_path: str,
             canvas = image_rgb.copy()
             for p in pore_entries:
                 b = p["box"]
-                if i == 0:
-                    cv2.rectangle(canvas, (int(b["x1"]), int(b["y1"])), (int(b["x2"]), int(b["y2"])), (50, 255, 50), 2)
-                elif i == 1:
+                # if i == 0:
+                #     cv2.rectangle(canvas, (int(b["x1"]), int(b["y1"])), (int(b["x2"]), int(b["y2"])), (50, 255, 50), 2)
+                if i == 1:
                     cv2.drawContours(canvas, [p["_contour"]], -1, (0, 255, 0), 2)
                 else:
                     cv2.drawContours(canvas, [p["_contour"]], -1, p["_color"], 2)
-                    cv2.rectangle(canvas, (int(b["x1"]), int(b["y1"])), (int(b["x2"]), int(b["y2"])), p["_color"], 3)
+                    # cv2.rectangle(canvas, (int(b["x1"]), int(b["y1"])), (int(b["x2"]), int(b["y2"])), p["_color"], 3)
             ax.imshow(canvas); ax.set_title(titles[i]); ax.axis('off')
         plt.tight_layout(); plt.show()
 

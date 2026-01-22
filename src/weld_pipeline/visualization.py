@@ -42,17 +42,40 @@ def draw_technical_overlay(image_path, line_params, discontinuity_masks, weld_ma
                 y1, y2 = int(m * x1 + c), int(m * x2 + c)
                 cv2.line(img, (x1, y1), (x2, y2), (255, 255, 0), 2)
 
-    # 6. Porosity Segmentations (ISO Color Coded) - Numpy Array
+    # 6. Porosity Segmentations (ISO Color Coded)
     if porosity_data:
         for p in porosity_data:
-            p_mask = p['mask']
+            # Use the private key _contour that porosity_check provides
+            contour = p.get('_contour')
+            if contour is None:
+                continue
+                
             grade = p.get('grade', 'D').upper()
-            color = (0, 255, 0) if grade == 'B' else (0, 255, 255) if grade == 'C' else (0, 0, 255)
-            img[p_mask > 0] = color
+            
+            # Colors defined in BGR (since the 'img' is currently BGR)
+            if grade == 'A': 
+                color = (50, 255, 50)    # Light Green
+            elif grade == 'B': 
+                color = (0, 255, 255)    # Yellow
+            elif grade == 'C': 
+                color = (0, 165, 255)    # Orange
+            elif grade == 'D': 
+                color = (0, 69, 255)     # Deep Orange/Red-ish
+            else: 
+                color = (0, 0, 255)      # Red
+
+            # drawContours: 
+            # [contour] is the list of points
+            # -1 means draw all contours in the list
+            # color is our BGR tuple
+            # 2 is the thickness (change to 3 or 4 if the lines are too thin)
+            cv2.drawContours(img, [contour], -1, color, 2) 
 
     # Apply transparency blend
-    alpha = 0.4
+    alpha = 1
     cv2.addWeighted(img, alpha, overlay, 1 - alpha, 0, img)
+    
+    # Final step converts the BGR drawing above into RGB for PIL/Display
     return cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
 def render_report_column(text, width=600, height=1000, title=""):
