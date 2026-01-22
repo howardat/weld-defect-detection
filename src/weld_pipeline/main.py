@@ -31,12 +31,12 @@ def main():
     print(f"Analyzing: {target_image.name}")
 
     # 3. Run Checks (using the FILE path)
-    has_discontinuity  = [{'discontinuity': discontinuity_check(
+    has_discontinuity = [{'discontinuity': discontinuity_check(
         image_path=str(target_image), 
         model_path=str(MODEL_PATH), 
         threshold=0.8, 
         visualize=True
-    )}]
+    )[0]}]
 
     disc_bool, refined_masks, line_params = discontinuity_check(
         image_path=str(target_image), 
@@ -52,7 +52,7 @@ def main():
         plate_thickness_s=10.0
     )
 
-    crack_boxes_list, crack_masks_list, all_crack_detections = cracks_check(
+    crack_boxes_list, crack_masks_list, all_crack_detections, weld_mask = cracks_check(
         image_path=str(target_image), 
         model_path=str(MODEL_PATH)
     )
@@ -68,7 +68,7 @@ def main():
             item['bbox'] = [int(b['x1']), int(b['y1']), int(b['x2']), int(b['y2'])]
             # Remove the old high-precision box dictionary
             item.pop('box', None)
-
+    
     with open('../../data/json_output/merge.json', 'w') as f:
         json.dump(final_json, f, indent=4)  
 
@@ -86,7 +86,7 @@ def main():
         output_path=output_filename,
         line_params=line_params, 
         discontinuity_masks=refined_masks, 
-        weld_mask=None, 
+        weld_mask=weld_mask, 
         porosity_data=raw_pore_data,
         crack_masks=crack_masks_list
     )

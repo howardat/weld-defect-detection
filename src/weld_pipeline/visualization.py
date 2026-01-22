@@ -5,77 +5,68 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
 def draw_technical_overlay(image_path, line_params, discontinuity_masks, weld_mask, porosity_data, crack_masks):
-    """
-    Creates the technical master image with all masks, lines, and bboxes.
-    """
     img = cv2.imread(str(image_path))
-    overlay = img.copy()
-    h, w = img.shape[:2]
+    if img is None: return None
     
-    # 1. Base Weld Mask (Green) - Numpy Array
-    if (not discontinuity_masks or len(discontinuity_masks) == 0) and weld_mask is not None:
-        img[weld_mask > 0] = [0, 255, 0]
+    h, w = img.shape[:2]
+    # Create a separate layer for transparent elements
+    overlay = img.copy()
+    
+    # --- SECTION A: TRANSPARENT ELEMENTS ---
+    # 1. Base Weld Mask (Green)
+    if weld_mask is not None:
+        pts = [np.array(poly, dtype=np.int32) for poly in weld_mask]
+        cv2.fillPoly(overlay, pts, color=[0, 255, 0])
 
-    # 2. Discontinuity Masks (Orange) - Numpy Array
+    # 2. Discontinuity Masks (Yellow)
     if discontinuity_masks:
         for d_mask in discontinuity_masks:
-            img[d_mask > 0] = [255, 165, 0]
+            # 1. Convert to numpy array
+            pts = np.array(d_mask, dtype=np.int32)
+            
+            # 2. Reshape if it's a flat list [x, y, x, y...] 
+            # or just ensure it is (Points, 1, 2)
+            if pts.ndim == 2:
+                pts = pts.reshape((-1, 1, 2))
+            
+            # 3. OpenCV expects a LIST of arrays
+            cv2.fillPoly(overlay, [pts], color=[0, 255, 255])
 
-    # 3. Crack Masks (Red) - LIST of polygon points
-    # This is where your error was happening.
+    # Blend overlay into img (0.4 alpha makes it transparent)
+    alpha = 0.4
+    cv2.addWeighted(overlay, alpha, img, 1 - alpha, 0, img)
+
+    # --- SECTION B: SOLID ELEMENTS (Draw directly on 'img') ---
+    # 3. Crack Masks (Red)
     if crack_masks:
         for poly_points in crack_masks:
-            # Convert the list of [x, y] to a numpy array for OpenCV
-            pts = np.array(poly_points, np.int32)
-            pts = pts.reshape((-1, 1, 2))
-            
-            # Draw the filled red mask for the crack
+            pts = np.array(poly_points, np.int32).reshape((-1, 1, 2))
             cv2.fillPoly(img, [pts], (0, 0, 255))
-            # Draw a bright red outline for visibility
             cv2.polylines(img, [pts], True, (50, 50, 255), 2)
 
-    # 5. Fitted Linear Functions (Cyan Line)
+    # 4. Fitted Lines (Cyan)
     if line_params:
-        for (m, c) in line_params:
-            if m is not None:
+        for params in line_params:
+            m, b = params.get('m'), params.get('b')
+            if m is not None and b is not None:
                 x1, x2 = 0, w
-                y1, y2 = int(m * x1 + c), int(m * x2 + c)
+                y1, y2 = int(m * x1 + b), int(m * x2 + b)
                 cv2.line(img, (x1, y1), (x2, y2), (255, 255, 0), 2)
 
-    # 6. Porosity Segmentations (ISO Color Coded)
+    # 5. Porosity (Grade Coded)
     if porosity_data:
         for p in porosity_data:
-            # Use the private key _contour that porosity_check provides
             contour = p.get('_contour')
-            if contour is None:
-                continue
-                
-            grade = p.get('grade', 'D').upper()
+            if contour is None: continue
             
-            # Colors defined in BGR (since the 'img' is currently BGR)
-            if grade == 'A': 
-                color = (50, 255, 50)    # Light Green
-            elif grade == 'B': 
-                color = (0, 255, 255)    # Yellow
-            elif grade == 'C': 
-                color = (0, 165, 255)    # Orange
-            elif grade == 'D': 
-                color = (0, 69, 255)     # Deep Orange/Red-ish
-            else: 
-                color = (0, 0, 255)      # Red
+            grade = p.get('grade', 'D').upper()
+            # BGR Colors
+            colors = {'A': (50, 255, 50), 'B': (0, 255, 255), 
+                      'C': (0, 165, 255), 'D': (0, 69, 255)}
+            color = colors.get(grade, (0, 0, 255))
+            
+            cv2.drawContours(img, [contour], -1, color, 2)
 
-            # drawContours: 
-            # [contour] is the list of points
-            # -1 means draw all contours in the list
-            # color is our BGR tuple
-            # 2 is the thickness (change to 3 or 4 if the lines are too thin)
-            cv2.drawContours(img, [contour], -1, color, 2) 
-
-    # Apply transparency blend
-    alpha = 1
-    cv2.addWeighted(img, alpha, overlay, 1 - alpha, 0, img)
-    
-    # Final step converts the BGR drawing above into RGB for PIL/Display
     return cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
 def render_report_column(text, width=600, height=1000, title=""):

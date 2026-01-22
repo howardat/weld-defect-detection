@@ -73,7 +73,7 @@ def cracks_check(image_path: str, model_path: str):
         json.dump(all_crack_detections, f, indent=4)
 
     # RETURN THREE VALUES to avoid unpacking errors in main.py
-    return crack_boxes_list, crack_masks_list, all_crack_detections
+    return crack_boxes_list, crack_masks_list, all_crack_detections, stage1_results[0].masks.xy
 
 if __name__ == '__main__':
     boxes, masks, raw_json = cracks_check(
