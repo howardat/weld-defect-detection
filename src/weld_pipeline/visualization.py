@@ -50,20 +50,40 @@ def draw_technical_overlay(image_path, line_params, discontinuity_masks, weld_ma
     alpha = 0.4
     cv2.addWeighted(overlay, alpha, img, 1 - alpha, 0, img)
 
-    # --- 3. Porosity & Cracks (Always Solid Overlays) ---
+    # --- 3. Porosity & Cracks (Semi-Transparent Overlays) ---
+    # Create an overlay for elements that need transparency
+    defect_overlay = img.copy()
+
+    # A. Cracks (Red - Type 100)
     if crack_masks:
         for poly_points in crack_masks:
             pts = np.array(poly_points, np.int32).reshape((-1, 1, 2))
-            cv2.fillPoly(img, [pts], (0, 0, 255))
+            # Draw onto the defect_overlay
+            cv2.fillPoly(defect_overlay, [pts], (0, 0, 255)) 
 
+    # B. Porosity (ISO 5817:2023 Color Hierarchy)
     if porosity_data:
+        iso_colors = {
+            'B': (50, 255, 50),   # Green
+            'C': (0, 255, 255),   # Yellow
+            'D': (0, 165, 255),   # Orange
+            'FAIL': (0, 0, 255),  # Red
+            'F': (0, 0, 255)      # Red
+        }
         for p in porosity_data:
             contour = p.get('_contour')
             if contour is not None:
-                grade = p.get('grade', 'D').upper()
-                colors = {'A': (50, 255, 50), 'B': (0, 255, 255), 
-                          'C': (0, 165, 255), 'D': (0, 69, 255)}
-                cv2.drawContours(img, [contour], -1, colors.get(grade, (0, 0, 255)), 2)
+                grade = str(p.get('grade', 'F')).upper()
+                draw_color = iso_colors.get(grade, (0, 0, 255))
+                # Fill the pore with color on the overlay
+                cv2.fillPoly(defect_overlay, [contour], draw_color)
+                # Optional: Draw a sharper outline on the main image for clarity
+                cv2.drawContours(img, [contour], -1, draw_color, 1)
+
+    # --- 4. Final Blending ---
+    # defect_alpha: 0.0 is invisible, 1.0 is solid
+    defect_alpha = 0.5 
+    cv2.addWeighted(defect_overlay, defect_alpha, img, 1 - defect_alpha, 0, img)
 
     return cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
@@ -71,8 +91,8 @@ def render_report_column(text, width=600, height=1000, title=""):
     img = Image.new('RGB', (width, height), color=(255, 255, 255))
     draw = ImageDraw.Draw(img)
     try:
-        title_font = ImageFont.truetype("arial.ttf", 24)
-        body_font = ImageFont.truetype("arial.ttf", 16)
+        title_font = ImageFont.truetype("arial.ttf", 32)
+        body_font = ImageFont.truetype("arial.ttf", 20)
     except:
         title_font = ImageFont.load_default(); body_font = ImageFont.load_default()
 

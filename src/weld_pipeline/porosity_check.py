@@ -21,10 +21,17 @@ def porosity_check(image_path: str,
     h_orig, w_orig = image_bgr.shape[:2]
     gray_full = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2GRAY)
     
-    # ISO 5817 Limits
-    limit_B = min(0.2 * plate_thickness_s, 2.0)
-    limit_C = min(0.3 * plate_thickness_s, 3.0)
-    limit_D = min(0.4 * plate_thickness_s, 4.0)
+    # ISO 5817 Limits for Surface Pore (2017)
+    if plate_thickness_s <= 3.0:
+        # Strict limits for thin plates
+        lim_B = 0.0  # Not permitted
+        lim_C = 0.0  # Not permitted
+        lim_D = 0.3 * plate_thickness_s
+    else:
+        # Limits for plates > 3mm
+        lim_B = min(0.2 * plate_thickness_s, 2.0)
+        lim_C = min(0.3 * plate_thickness_s, 3.0)
+        lim_D = min(0.4 * plate_thickness_s, 4.0)
 
     # Stage 1: Weld Detection (Class 3)
     stage1_results = model.predict(image_rgb, conf=0.05, classes=3, verbose=False, save=True)
@@ -65,11 +72,17 @@ def porosity_check(image_path: str,
                         d_mm = np.sqrt(4 * (area_px * (px_to_mm ** 2)) / np.pi)
                         
                         # Grading for Color Visualization
-                        if d_mm <= (limit_B * 0.5): grade_color, label = (50, 255, 50), "A"
-                        elif d_mm <= limit_B: grade_color, label = (255, 255, 0), "B"
-                        elif d_mm <= limit_C: grade_color, label = (255, 165, 0), "C"
-                        elif d_mm <= limit_D: grade_color, label = (255, 69, 0), "D"
-                        else: grade_color, label = (255, 0, 0), "FAIL"
+                        # Apply Grading
+                        if d_mm == 0:
+                            label, grade_color = "B", (50, 255, 50)  # Perfect
+                        elif d_mm <= lim_B and lim_B > 0:
+                            label, grade_color = "B", (50, 255, 50)
+                        elif d_mm <= lim_C and lim_C > 0:
+                            label, grade_color = "C", (255, 255, 0)
+                        elif d_mm <= lim_D:
+                            label, grade_color = "D", (255, 165, 0)
+                        else:
+                            label, grade_color = "F", (255, 0, 0)
                         
                         # Map coordinates
                         cnt_mapped = cnt.copy()

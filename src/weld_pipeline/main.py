@@ -25,7 +25,8 @@ def process_single_image(image_path, model_path, json_dir, report_dir):
         image_path=str(image_path), 
         model_path=str(model_path), 
         px_to_mm=0.105, 
-        plate_thickness_s=10.0
+        plate_thickness_s=10.0,
+        visualize=False  # Disabled for batch to prevent popup windows
     )
 
     # Cracks check
@@ -52,9 +53,9 @@ def process_single_image(image_path, model_path, json_dir, report_dir):
         json.dump(final_json, f, indent=4)
 
     # 3. Optional VLM Step (Uncomment if needed)
-    # auditor = WeldAuditor()
-    # report_v, report_g = auditor.run_single_audit(image_path, image_json_path)
-    report_v, report_g = "VLM analysis skipped", "VLM analysis skipped"
+    auditor = WeldAuditor()
+    report_v, report_g = auditor.run_single_audit(image_path, image_json_path)
+    # report_v, report_g = "VLM analysis skipped", "VLM analysis skipped"
 
     # 4. Generate Visual Composition
     output_filename = report_dir / f"{image_path.stem}_final_audit.jpg"
