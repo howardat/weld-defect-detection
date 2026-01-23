@@ -23,9 +23,10 @@ def discontinuity_check(image_path: str,
     # =============================
     # LOAD IMAGE & MODEL
     # =============================
-    image = np.array(Image.open(image_path))
+    image_bgr = cv2.imread(image_path)
+    image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
     model = YOLO(model_path)
-    results = model.predict(image_path, conf=0.05, iou=0.5, classes=3, agnostic_nms=True, verbose=False)
+    results = model.predict(image_rgb, conf=0.05, classes=3, agnostic_nms=True, save=True, verbose=False)
 
     if results[0].masks is None or len(results[0].masks.data) == 0:
         print("No detections in Stage 1.")
@@ -93,7 +94,7 @@ def discontinuity_check(image_path: str,
         bbox = get_bbox_internal(mask_binary, padding=pad)
         if bbox is None: continue
         x1, y1, x2, y2 = bbox
-        crop_image = image[y1:y2, x1:x2]
+        crop_image = image_rgb[y1:y2, x1:x2]
         crop_results = model.predict(crop_image, conf=0.05, iou=0.5, classes=3, agnostic_nms=True, verbose=False)
         if crop_results[0].masks is None: continue
         refined = refine_mask_internal(crop_image, crop_results[0].masks.data, min_area_ratio)
@@ -151,10 +152,10 @@ def discontinuity_check(image_path: str,
         colors = [hsv_to_rgb((h, 1, 1)) for h in hues]
 
         # Stage 1: Original
-        axes[0].imshow(image); axes[0].axis('off'); axes[0].set_title("Stage 1: Original")
+        axes[0].imshow(image_rgb); axes[0].axis('off'); axes[0].set_title("Stage 1: Original")
 
         # Stage 2: Raw YOLO
-        axes[1].imshow(image)
+        axes[1].imshow(image_rgb)
         for mask in raw_masks:
             mask_rgba = np.zeros((orig_h, orig_w, 4), dtype=np.uint8)
             mask_rgba[mask > 0] = [0, 255, 0, 120]
@@ -162,7 +163,7 @@ def discontinuity_check(image_path: str,
         axes[1].axis('off'); axes[1].set_title("Stage 2: Raw YOLO")
 
         # Stage 3: Refined
-        axes[2].imshow(image)
+        axes[2].imshow(image_rgb)
         for i, mask in enumerate(all_masks):
             rgb_255 = (np.array(colors[i]) * 255).astype(np.uint8)
             mask_rgba = np.zeros((orig_h, orig_w, 4), dtype=np.uint8)
@@ -180,7 +181,7 @@ def discontinuity_check(image_path: str,
         axes[3].imshow(skeleton_composite); axes[3].axis('off'); axes[3].set_title("Stage 4: Skeletons")
 
         # Stage 5: Final Analysis (Masks + Lines)
-        axes[4].imshow(image)
+        axes[4].imshow(image_rgb)
         for i, mask in enumerate(all_masks):
             # Overlay refined mask
             rgb_255 = (np.array(colors[i]) * 255).astype(np.uint8)

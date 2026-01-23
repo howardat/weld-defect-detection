@@ -9,63 +9,61 @@ def draw_technical_overlay(image_path, line_params, discontinuity_masks, weld_ma
     if img is None: return None
     
     h, w = img.shape[:2]
-    # Create a separate layer for transparent elements
     overlay = img.copy()
     
-    # --- SECTION A: TRANSPARENT ELEMENTS ---
-    # 1. Base Weld Mask (Green)
-    if weld_mask is not None:
+    # Check if we should skip the base weld mask
+    has_discontinuity = discontinuity_masks is not None and len(discontinuity_masks) > 0
+
+    # --- 1. Base Weld Mask (Blue) ---
+    # Only displayed if NO discontinuity is detected
+    if weld_mask is not None and not has_discontinuity:
         pts = [np.array(poly, dtype=np.int32) for poly in weld_mask]
-        cv2.fillPoly(overlay, pts, color=[0, 255, 0])
+        cv2.fillPoly(overlay, pts, color=[255, 0, 0]) # BGR Blue
 
-    # 2. Discontinuity Masks (Yellow)
-    if discontinuity_masks:
-        for d_mask in discontinuity_masks:
-            # 1. Convert to numpy array
-            pts = np.array(d_mask, dtype=np.int32)
+    # --- 2. Discontinuity Masks & Lines (Aligned Colors) ---
+    if has_discontinuity:
+        for i, mask in enumerate(discontinuity_masks):
+            # Generate color matching the logic in discontinuity_check.py
+            # Using 180 for OpenCV H (0-179)
+            hue = int(180 * i / len(discontinuity_masks))
+            hsv_color = np.uint8([[[hue, 255, 255]]])
+            bgr_color = cv2.cvtColor(hsv_color, cv2.COLOR_HSV2BGR)[0][0].tolist()
             
-            # 2. Reshape if it's a flat list [x, y, x, y...] 
-            # or just ensure it is (Points, 1, 2)
-            if pts.ndim == 2:
-                pts = pts.reshape((-1, 1, 2))
-            
-            # 3. OpenCV expects a LIST of arrays
-            cv2.fillPoly(overlay, [pts], color=[0, 255, 255])
+            # Draw the Mask on the overlay layer
+            if isinstance(mask, np.ndarray):
+                overlay[mask > 0] = bgr_color
+            else:
+                pts = np.array(mask, dtype=np.int32).reshape((-1, 1, 2))
+                cv2.fillPoly(overlay, [pts], color=bgr_color)
 
-    # Blend overlay into img (0.4 alpha makes it transparent)
+            # Draw the Line on the main image layer (Sync color with mask)
+            if i < len(line_params):
+                lp = line_params[i]
+                m, b = lp.get('m'), lp.get('b')
+                if m is not None and b is not None:
+                    x1, x2 = 0, w
+                    y1, y2 = int(m * x1 + b), int(m * x2 + b)
+                    # Use the same bgr_color for the line
+                    cv2.line(img, (x1, y1), (x2, y2), bgr_color, 2, cv2.LINE_AA)
+
+    # Blend the masks (Stage 5 style transparency)
     alpha = 0.4
     cv2.addWeighted(overlay, alpha, img, 1 - alpha, 0, img)
 
-    # --- SECTION B: SOLID ELEMENTS (Draw directly on 'img') ---
-    # 3. Crack Masks (Red)
+    # --- 3. Porosity & Cracks (Always Solid Overlays) ---
     if crack_masks:
         for poly_points in crack_masks:
             pts = np.array(poly_points, np.int32).reshape((-1, 1, 2))
             cv2.fillPoly(img, [pts], (0, 0, 255))
-            cv2.polylines(img, [pts], True, (50, 50, 255), 2)
 
-    # 4. Fitted Lines (Cyan)
-    if line_params:
-        for params in line_params:
-            m, b = params.get('m'), params.get('b')
-            if m is not None and b is not None:
-                x1, x2 = 0, w
-                y1, y2 = int(m * x1 + b), int(m * x2 + b)
-                cv2.line(img, (x1, y1), (x2, y2), (255, 255, 0), 2)
-
-    # 5. Porosity (Grade Coded)
     if porosity_data:
         for p in porosity_data:
             contour = p.get('_contour')
-            if contour is None: continue
-            
-            grade = p.get('grade', 'D').upper()
-            # BGR Colors
-            colors = {'A': (50, 255, 50), 'B': (0, 255, 255), 
-                      'C': (0, 165, 255), 'D': (0, 69, 255)}
-            color = colors.get(grade, (0, 0, 255))
-            
-            cv2.drawContours(img, [contour], -1, color, 2)
+            if contour is not None:
+                grade = p.get('grade', 'D').upper()
+                colors = {'A': (50, 255, 50), 'B': (0, 255, 255), 
+                          'C': (0, 165, 255), 'D': (0, 69, 255)}
+                cv2.drawContours(img, [contour], -1, colors.get(grade, (0, 0, 255)), 2)
 
     return cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 

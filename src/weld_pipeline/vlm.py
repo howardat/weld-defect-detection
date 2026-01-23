@@ -5,7 +5,7 @@ from pathlib import Path
 from transformers import AutoProcessor, Gemma3ForConditionalGeneration, BitsAndBytesConfig
 
 class WeldAuditor:
-    def __init__(self, model_id="google/gemma-3-12b-it"):
+    def __init__(self, model_id="google/gemma-3-1b-it"):
         print(f"--- Loading {model_id} ---")
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.dtype = torch.bfloat16

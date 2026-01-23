@@ -73,16 +73,16 @@ def main():
         json.dump(final_json, f, indent=4)  
 
     # 5. Run VLM (Gemma 3)
-    auditor = WeldAuditor()
+    # auditor = WeldAuditor()
     # This now works because we added the method to vlm.py
-    report_v, report_g = auditor.run_single_audit(target_image, JSON_OUT)
+    # report_v, report_g = auditor.run_single_audit(target_image, JSON_OUT)
 
     # 6. Final Visualization
     output_filename = REPORT_OUT_DIR / f"{target_image.stem}_final_audit.jpg"
     create_comparison_composition(
         image_path=target_image,
-        report_v_text=report_v,
-        report_g_text=report_g,
+        report_v_text='',
+        report_g_text='',
         output_path=output_filename,
         line_params=line_params, 
         discontinuity_masks=refined_masks, 
