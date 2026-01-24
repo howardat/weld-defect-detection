@@ -1,11 +1,12 @@
 from weld_pipeline.visualization import create_comparison_composition
-from weld_pipeline.vlm import WeldAuditor
 from weld_pipeline.porosity_check import porosity_check
 from weld_pipeline.discontinuity_check import discontinuity_check
 from weld_pipeline.cracks_check import cracks_check
 
 from pathlib import Path
 import json
+
+from weld_pipeline.vlm import run_audit
 
 def process_single_image(image_path, model_path, json_dir, report_dir):
     """Encapsulates the logic for a single weld analysis."""
@@ -53,16 +54,14 @@ def process_single_image(image_path, model_path, json_dir, report_dir):
         json.dump(final_json, f, indent=4)
 
     # 3. Optional VLM Step (Uncomment if needed)
-    auditor = WeldAuditor()
-    report_v, report_g = auditor.run_single_audit(image_path, image_json_path)
+    report_v, report_g = run_audit(image_path, image_json_path)
     # report_v, report_g = "VLM analysis skipped", "VLM analysis skipped"
 
     # 4. Generate Visual Composition
     output_filename = report_dir / f"{image_path.stem}_final_audit.jpg"
     create_comparison_composition(
         image_path=image_path,
-        report_v_text=report_v,
-        report_g_text=report_g,
+        report_text=report_v,
         output_path=output_filename,
         line_params=line_params, 
         discontinuity_masks=refined_masks, 
