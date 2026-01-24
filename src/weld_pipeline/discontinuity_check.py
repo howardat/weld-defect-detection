@@ -41,7 +41,8 @@ def discontinuity_check(image_path: str,
     for mask_data in results[0].masks.data:
         mask_np = mask_data.cpu().numpy()
         mask_resized = cv2.resize(mask_np, (orig_w, orig_h), interpolation=cv2.INTER_NEAREST)
-        mask_binary = (mask_resized > 0.5).astype(np.uint8)
+        mask_resized = np.clip(mask_resized, 0.0, 1.0)
+        mask_binary = (mask_resized >= 0.9).astype(np.uint8)
         raw_masks.append(mask_binary)
 
     # =============================
