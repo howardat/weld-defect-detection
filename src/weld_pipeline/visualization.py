@@ -95,7 +95,7 @@ def draw_technical_overlay(
 # TEXT RENDERING
 # ============================================================
 
-def render_report_column(text, width=1200, height=900, title="Visual Inspection Report"):
+def render_report_column(text, width=1200, height=900, title="Moondream Inspection Report"):
     img = Image.new("RGB", (width, height), (255, 255, 255))
     draw = ImageDraw.Draw(img)
 
@@ -161,7 +161,7 @@ def create_comparison_composition(
         report_text,
         width=canvas_w,
         height=900,
-        title="Visual Inspection Report",
+        title="Moondream Inspection Report",
     )
 
     # --- Stitch ---
