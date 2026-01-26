@@ -26,10 +26,13 @@ def discontinuity_check(image_path: str,
     # PIL loads as RGB by default, which YOLO expects.
     pil_img = Image.open(image_path).convert("RGB")
     image_rgb = np.array(pil_img)
-    
+
+    # 2. Create a BGR copy SPECIFICALLY for YOLO's internal saving
+    image_bgr = cv2.cvtColor(image_rgb, cv2.COLOR_RGB2BGR)
+
     model = YOLO(model_path)
     # YOLO handles RGB numpy arrays correctly
-    results = model.predict(image_rgb, conf=0.05, classes=3, verbose=True, save=True)
+    results = model.predict(image_bgr, conf=0.05, classes=3, agnostic_nms=True, verbose=False, save=False)
 
     if results[0].masks is None or len(results[0].masks.data) == 0:
         print("No detections in Stage 1.")
@@ -105,11 +108,11 @@ def discontinuity_check(image_path: str,
         x1, y1, x2, y2 = bbox
         
         # Crop from the RGB image
-        crop_image_rgb = image_rgb[y1:y2, x1:x2]
-        crop_results = model.predict(crop_image_rgb, conf=0.05, iou=0.5, classes=3, agnostic_nms=True, verbose=False, save=True)
+        crop_image_bgr = image_bgr[y1:y2, x1:x2]
+        crop_results = model.predict(crop_image_bgr, conf=0.05, iou=0.5, classes=3, agnostic_nms=True, verbose=False, save=False)
         
         if crop_results[0].masks is not None:
-            refined = refine_mask_internal(crop_image_rgb, crop_results[0].masks.data, min_area_ratio, p_intensity)
+            refined = refine_mask_internal(crop_image_bgr, crop_results[0].masks.data, min_area_ratio, p_intensity)
             for m in refined:
                 full_mask = np.zeros((orig_h, orig_w), dtype=np.uint8)
                 full_mask[y1:y2, x1:x2] = m

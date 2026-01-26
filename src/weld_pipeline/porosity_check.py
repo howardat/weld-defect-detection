@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import json
 from ultralytics import YOLO
+from PIL import Image
 
 def porosity_check(image_path: str, 
                    model_path: str, 
@@ -14,10 +15,15 @@ def porosity_check(image_path: str,
     Returns: A list of dictionaries in the specific 'Crack' style format.
     """
     model = YOLO(model_path)
-    image_bgr = cv2.imread(image_path)
+
+    # PIL loads as RGB by default, which YOLO expects.
+    pil_img = Image.open(image_path).convert("RGB")
+    image_rgb = np.array(pil_img)
+
+    # 2. Create a BGR copy SPECIFICALLY for YOLO's internal saving
+    image_bgr = cv2.cvtColor(image_rgb, cv2.COLOR_RGB2BGR)
     if image_bgr is None: return []
-    
-    image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
+
     h_orig, w_orig = image_bgr.shape[:2]
     gray_full = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2GRAY)
     
@@ -34,7 +40,7 @@ def porosity_check(image_path: str,
         lim_D = min(0.4 * plate_thickness_s, 4.0)
 
     # Stage 1: Weld Detection (Class 3)
-    stage1_results = model.predict(image_rgb, conf=0.05, classes=3, verbose=False, save=False)
+    stage1_results = model.predict(image_bgr, conf=0.10, classes=3, verbose=False, show=False)
     
     pore_entries = []
     pad = 20
@@ -46,15 +52,15 @@ def porosity_check(image_path: str,
             x1_c, y1_c = max(0, x1_w - pad), max(0, y1_w - pad)
             x2_c, y2_c = min(w_orig, x2_w + pad), min(h_orig, y2_w + pad)
             
-            crop_rgb = image_rgb[y1_c:y2_c, x1_c:x2_c]
+            crop_bgr = image_bgr[y1_c:y2_c, x1_c:x2_c]
             crop_gray = gray_full[y1_c:y2_c, x1_c:x2_c]
             dark_mask_crop = (crop_gray < 60).astype(np.uint8)
 
             # Stage 2: Pore Detection (Class 1)
-            stage2_results = model.predict(crop_rgb, conf=0.05, iou=0.8, classes=1, verbose=False)
+            stage2_results = model.predict(crop_bgr, conf=0.05, iou=0.8, classes=1, verbose=False)
 
             if stage2_results[0].masks is not None:
-                c_h, c_w = crop_rgb.shape[:2]
+                c_h, c_w = crop_bgr.shape[:2]
                 # Get boxes and confidences to match requested format
                 boxes = stage2_results[0].boxes
                 
