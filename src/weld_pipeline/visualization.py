@@ -4,7 +4,7 @@ import cv2
 import textwrap
 import math
 
-def draw_technical_overlay(image_path, line_params, discontinuity_masks, weld_mask, porosity_data, crack_masks, show_labels=True, area_percent=0.005):
+def draw_technical_overlay(image_path, line_params, discontinuity_masks, weld_mask, porosity_data, crack_masks, show_labels=True, area_percent=0.008):
     """
     Draws a beautiful technical overlay. 
     area_percent: 0.01 means the font height is roughly 1% of the diagonal/base scale of the image.
