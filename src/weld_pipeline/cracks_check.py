@@ -3,16 +3,23 @@ import cv2
 import numpy as np
 import json
 from ultralytics import YOLO
+from PIL import Image
 
 def cracks_check(image_path: str, model_path: str):
     # Load model and original image
     model = YOLO(model_path)
-    image_bgr = cv2.imread(image_path)
-    image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
+
+    # PIL loads as RGB by default, which YOLO expects.
+    pil_img = Image.open(image_path).convert("RGB")
+    image_rgb = np.array(pil_img)
+
+    # 2. Create a BGR copy SPECIFICALLY for YOLO's internal saving
+    image_bgr = cv2.cvtColor(image_rgb, cv2.COLOR_RGB2BGR)
+
     h, w = image_bgr.shape[:2]
     
     # --- STAGE 1: Detection of weld/candidate areas (Class 3) ---
-    stage1_results = model.predict(image_rgb, conf=0.25, iou=0.5, classes=3, verbose=False)
+    stage1_results = model.predict(image_bgr, conf=0.25, iou=0.5, classes=3, verbose=False)
     
     all_crack_detections = [] # For JSON logging
     crack_masks_list = []     # For Visualization
@@ -27,7 +34,7 @@ def cracks_check(image_path: str, model_path: str):
             x1_p, y1_p = max(0, x1 - pad), max(0, y1 - pad)
             x2_p, y2_p = min(w, x2 + pad), min(h, y2 + pad)
             
-            crop = image_rgb[y1_p:y2_p, x1_p:x2_p]
+            crop = image_bgr[y1_p:y2_p, x1_p:x2_p]
             
             # --- STAGE 2: Detection + Segmentation of cracks (Class 0) ---
             stage2_results = model.predict(crop, conf=0.05, iou=0.2, classes=0, verbose=False)

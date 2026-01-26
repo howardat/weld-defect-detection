@@ -4,7 +4,7 @@ import cv2
 import textwrap
 import math
 
-def draw_technical_overlay(image_path, line_params, discontinuity_masks, weld_mask, porosity_data, crack_masks, show_labels=True, area_percent=0.008):
+def draw_technical_overlay(image_path, line_params, discontinuity_masks, weld_mask, porosity_data, crack_masks, disc_bool=False,  show_labels=True, area_percent=0.008):
     """
     Draws a beautiful technical overlay. 
     area_percent: 0.01 means the font height is roughly 1% of the diagonal/base scale of the image.
@@ -54,24 +54,36 @@ def draw_technical_overlay(image_path, line_params, discontinuity_masks, weld_ma
         print("Warning: No TTF fonts found. Scaling will not work with default font.")
         font_main = ImageFont.load_default()
 
-    has_discontinuity = discontinuity_masks is not None and len(discontinuity_masks) > 0
+    has_discontinuity = discontinuity_masks is not None and len(discontinuity_masks) > 0 and disc_bool
 
     # --- 1. Weld Mask ---
     if weld_mask is not None and not has_discontinuity:
         for poly in weld_mask:
+            # 1. Convert polygon points
+            # Ensure poly is handled correctly whether it's a list or a nested array
             pts = [tuple(p) for p in poly]
+            
+            # 2. Draw the transparent mask for THIS specific weld
+            # Using i to potentially vary colors if you wanted to
             draw_mask.polygon(pts, fill=BRAND_BLUE[:3] + (100,))
         
-        if show_labels:
-            all_pts = np.concatenate(weld_mask)
-            bx, by, bw, bh = cv2.boundingRect(all_pts)
-            draw_ui.rectangle([bx, by, bx + bw, by + bh], outline=BRAND_BLUE, width=LINE_WIDTH)
-            
-            label = "WELD"
-            t_bbox = draw_ui.textbbox((bx, by), label, font=font_main)
-            tw, th = t_bbox[2]-t_bbox[0], t_bbox[3]-t_bbox[1]
-            draw_ui.rectangle([bx, by - th - (PAD*2), bx + tw + (PAD*2), by], fill=BRAND_BLUE)
-            draw_ui.text((bx + PAD, by - th - PAD), label, font=font_main, fill=WHITE)
+            if show_labels:
+                # 3. Calculate Bounding Box for this specific weld
+                # Flatten points if necessary for cv2.boundingRect
+                all_pts = np.array(poly).reshape(-1, 2)
+                bx, by, bw, bh = cv2.boundingRect(all_pts)
+                
+                # 4. Draw UI elements for this specific weld
+                draw_ui.rectangle([bx, by, bx + bw, by + bh], outline=BRAND_BLUE, width=LINE_WIDTH)
+                
+                # Label each weld (e.g., WELD 1, WELD 2)
+                label = f"WELD"
+                t_bbox = draw_ui.textbbox((bx, by), label, font=font_main)
+                tw, th = t_bbox[2]-t_bbox[0], t_bbox[3]-t_bbox[1]
+                
+                # Draw label background and text
+                draw_ui.rectangle([bx, by - th - (PAD*2), bx + tw + (PAD*2), by], fill=BRAND_BLUE)
+                draw_ui.text((bx + PAD, by - th - PAD), label, font=font_main, fill=WHITE)
 
     # --- 2. Discontinuity Masks & Lines ---
     if has_discontinuity:

@@ -66,6 +66,7 @@ def process_single_image(image_path, model_path, json_dir, report_dir):
         output_path=output_filename,
         line_params=line_params, 
         discontinuity_masks=refined_masks, 
+        disc_bool=disc_bool,
         weld_mask=weld_mask, 
         porosity_data=raw_pore_data,
         crack_masks=crack_masks_list
