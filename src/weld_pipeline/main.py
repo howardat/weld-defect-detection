@@ -17,7 +17,7 @@ def process_single_image(image_path, model_path, json_dir, report_dir):
         image_path=str(image_path), 
         model_path=str(model_path), 
         threshold=0.8, 
-        visualize=True  # Disabled for batch to prevent popup windows
+        visualize=False  # Disabled for batch to prevent popup windows
     )
 
     # Porosity check
