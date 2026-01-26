@@ -19,7 +19,7 @@ def draw_technical_overlay(image_path, line_params, discontinuity_masks, weld_ma
     # --- Area-Based Scalable Constants ---
     # Adjust 3.5 to make text larger or smaller globally
     FONT_SIZE = max(10, int(base_scale * area_percent * 3.5)) 
-    LINE_WIDTH = max(1, int(base_scale * 0.002))
+    LINE_WIDTH = max(2, int(base_scale * 0.002))
     THICK_LINE = max(2, int(base_scale * 0.005))
     PAD = int(FONT_SIZE * 0.35)
     
@@ -60,7 +60,7 @@ def draw_technical_overlay(image_path, line_params, discontinuity_masks, weld_ma
     if weld_mask is not None and not has_discontinuity:
         for poly in weld_mask:
             pts = [tuple(p) for p in poly]
-            draw_mask.polygon(pts, fill=BRAND_BLUE[:3] + (50,), outline=BRAND_BLUE[:3] + (150,))
+            draw_mask.polygon(pts, fill=BRAND_BLUE[:3] + (100,))
         
         if show_labels:
             all_pts = np.concatenate(weld_mask)
@@ -92,7 +92,7 @@ def draw_technical_overlay(image_path, line_params, discontinuity_masks, weld_ma
                 else: dx, dy, dw, dh = 0, 0, 0, 0
             else:
                 pts = [tuple(p) for p in mask]
-                draw_mask.polygon(pts, fill=base_color, outline=rgb_tuple + (200,))
+                draw_mask.polygon(pts, fill=base_color)
                 np_pts = np.array(mask)
                 dx, dy, dw, dh = cv2.boundingRect(np_pts)
 

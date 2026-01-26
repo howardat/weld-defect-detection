@@ -9,7 +9,7 @@ from matplotlib.colors import hsv_to_rgb
 
 def discontinuity_check(image_path: str, 
                         model_path: str, 
-                        threshold: float = 0.98, 
+                        threshold: float = 0.90, 
                         visualize: bool = False) -> bool:
     """
     Checks for weld discontinuities by comparing linear function similarities.
@@ -128,14 +128,31 @@ def discontinuity_check(image_path: str,
     if len(line_params) < 2:
         return False, [], []
     
-    print("\n--- Linear Function Similarity Comparisons ---")
+    print("\n--- Linear Function Similarity Comparisons (Distance-Based) ---")
     for i in range(len(line_params)):
         for j in range(i + 1, len(line_params)):
-            m1, m2 = line_params[i]['m'], line_params[j]['m']
-            if m1 is not None and m2 is not None:
-                # Cosine Similarity of [1, m] vectors
-                v1, v2 = np.array([1, m1]), np.array([1, m2])
-                similarity = np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2))
+            # Extract slope (m) and intercept (b)
+            m1, b1 = line_params[i]['m'], line_params[i]['b']
+            m2, b2 = line_params[j]['m'], line_params[j]['b']
+            
+            if None not in [m1, m2, b1, b2]:
+                # Define the parameter vectors
+                v1 = np.array([m1, b1])
+                v2 = np.array([m2, b2])
+                
+                # 1. Calculate the Euclidean distance between the two functions
+                distance = np.linalg.norm(v1 - v2)
+                
+                # 2. Calculate the sum of the magnitudes (for normalization)
+                mag_sum = np.linalg.norm(v1) + np.linalg.norm(v2)
+                
+                # 3. Calculate Normalized Similarity
+                # If both lines are at the origin (0,0), mag_sum is 0. 
+                if mag_sum == 0:
+                    similarity = 1.0
+                else:
+                    similarity = 1.0 - (distance / mag_sum)
+                
                 print(f"Mask {i} vs Mask {j} | Similarity: {similarity:.4f}")
                 
                 if similarity >= threshold:

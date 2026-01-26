@@ -34,7 +34,7 @@ def porosity_check(image_path: str,
         lim_D = min(0.4 * plate_thickness_s, 4.0)
 
     # Stage 1: Weld Detection (Class 3)
-    stage1_results = model.predict(image_rgb, conf=0.05, classes=3, verbose=False, save=True)
+    stage1_results = model.predict(image_rgb, conf=0.05, classes=3, verbose=False, save=False)
     
     pore_entries = []
     pad = 20
