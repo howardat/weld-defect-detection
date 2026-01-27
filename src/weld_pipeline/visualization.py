@@ -3,6 +3,7 @@ import numpy as np
 import cv2
 import textwrap
 import math
+import os
 
 def draw_technical_overlay(image_path, line_params, discontinuity_masks, weld_mask, porosity_data, crack_masks, disc_bool=False,  show_labels=True, area_percent=0.008):
     """
@@ -196,34 +197,62 @@ def render_report_column(text, width=600, height=1000, title=""):
     return img
 
 def create_comparison_composition(image_path, report_v_text, report_g_text, output_path, **kwargs):
-    # Pass area_percent through kwargs if provided
+    # 1. Setup the main storage folder
+    root_folder = "../../paper_imgs"
+    
+    # 2. Get the base filename (e.g., 'welding_sample_01')
+    base_name = os.path.splitext(os.path.basename(image_path))[0]
+    
+    # 3. Create a specific subfolder for this image
+    # Path will look like: ../paper_imgs/welding_sample_01/
+    target_dir = os.path.join(root_folder, base_name)
+    if not os.path.exists(target_dir):
+        os.makedirs(target_dir)
+    
+    # 4. Save Original Image
+    img_original = Image.open(image_path)
+    img_original.save(os.path.join(target_dir, f"{base_name}_original.jpg"))
+
+    # Generate technical overlays
     clean_rgb = draw_technical_overlay(image_path, show_labels=False, **kwargs)
     label_rgb = draw_technical_overlay(image_path, show_labels=True, **kwargs)
     
     img_clean = Image.fromarray(clean_rgb)
     img_label = Image.fromarray(label_rgb)
     
+    # 5. Save Clean and Labeled images into the subfolder
+    img_clean.save(os.path.join(target_dir, f"{base_name}_clean.jpg"))
+    img_label.save(os.path.join(target_dir, f"{base_name}_label.jpg"))
+
+    # 6. Save Model Inference to Markdown inside the subfolder
+    md_path = os.path.join(target_dir, f"{base_name}_inference.md")
+    with open(md_path, "w", encoding="utf-8") as f:
+        f.write(f"# Inference Report: {base_name}\n\n")
+        f.write(f"## VLM Analysis\n{report_v_text}\n\n")
+        f.write(f"--- \n\n")
+        f.write(f"## VLM + YOLO Analysis\n{report_g_text}\n")
+    
+    # --- Assembly Logic for the Final Composition ---
     canvas_w = 1200
     h_img = int(canvas_w * (img_clean.height / img_clean.width))
-    img_clean = img_clean.resize((canvas_w, h_img), Image.LANCZOS)
-    img_label = img_label.resize((canvas_w, h_img), Image.LANCZOS)
+    img_clean_res = img_clean.resize((canvas_w, h_img), Image.LANCZOS)
+    img_label_res = img_label.resize((canvas_w, h_img), Image.LANCZOS)
     
     text_h = 900
     col_l = render_report_column(report_v_text, 600, text_h, "VLM")
     col_r = render_report_column(report_g_text, 600, text_h, "VLM + YOLO")
     
-    # Assembly
     total_height = (h_img * 2) + text_h
     final_img = Image.new('RGB', (canvas_w, total_height), (255, 255, 255))
     
-    final_img.paste(img_clean, (0, 0))
-    final_img.paste(img_label, (0, h_img))
+    final_img.paste(img_clean_res, (0, 0))
+    final_img.paste(img_label_res, (0, h_img))
     final_img.paste(col_l, (0, h_img * 2))
     final_img.paste(col_r, (600, h_img * 2))
     
-    # Visual separators for beauty
     draw = ImageDraw.Draw(final_img)
     draw.line([(0, h_img), (canvas_w, h_img)], fill=(200, 200, 200), width=2)
     draw.line([(0, h_img*2), (canvas_w, h_img*2)], fill=(44, 62, 80), width=4)
     
+    # Save the final comparison strip
     final_img.save(output_path, quality=95)
