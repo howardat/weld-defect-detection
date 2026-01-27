@@ -79,7 +79,7 @@ def main():
     PROJECT_ROOT = BASE_DIR.parent.parent
     
     IMAGE_DIR = PROJECT_ROOT / "data" / "img"
-    MODEL_PATH = PROJECT_ROOT / "models" / "best.pt"
+    MODEL_PATH = PROJECT_ROOT / "models" / "wda11s-seg.pt"
     
     # Directories for results
     JSON_OUT_DIR = PROJECT_ROOT / "data" / "json_output"
