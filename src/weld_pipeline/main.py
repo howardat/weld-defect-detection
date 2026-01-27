@@ -16,8 +16,8 @@ def process_single_image(image_path, model_path, json_dir, report_dir):
     disc_bool, refined_masks, line_params = discontinuity_check(
         image_path=str(image_path), 
         model_path=str(model_path), 
-        threshold=0.8, 
-        visualize=True  # Disabled for batch to prevent popup windows
+        threshold=0.9, 
+        visualize=False  # Disabled for batch to prevent popup windows
     )
 
     # Porosity check
@@ -53,9 +53,9 @@ def process_single_image(image_path, model_path, json_dir, report_dir):
         json.dump(final_json, f, indent=4)
 
     # 3. Optional VLM Step (Uncomment if needed)
-    auditor = WeldAuditor()
-    report_v, report_g = auditor.run_single_audit(image_path, image_json_path)
-    # report_v, report_g = "VLM analysis skipped", "VLM analysis skipped"
+    # auditor = WeldAuditor()
+    # report_v, report_g = auditor.run_single_audit(image_path, image_json_path)
+    report_v, report_g = "VLM analysis skipped", "VLM analysis skipped"
 
     # 4. Generate Visual Composition
     output_filename = report_dir / f"{image_path.stem}_final_audit.jpg"
@@ -66,6 +66,7 @@ def process_single_image(image_path, model_path, json_dir, report_dir):
         output_path=output_filename,
         line_params=line_params, 
         discontinuity_masks=refined_masks, 
+        disc_bool=disc_bool,
         weld_mask=weld_mask, 
         porosity_data=raw_pore_data,
         crack_masks=crack_masks_list
@@ -78,7 +79,7 @@ def main():
     PROJECT_ROOT = BASE_DIR.parent.parent
     
     IMAGE_DIR = PROJECT_ROOT / "data" / "img"
-    MODEL_PATH = PROJECT_ROOT / "models" / "best.pt"
+    MODEL_PATH = PROJECT_ROOT / "models" / "wda11s-seg.pt"
     
     # Directories for results
     JSON_OUT_DIR = PROJECT_ROOT / "data" / "json_output"
