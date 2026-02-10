@@ -9,12 +9,13 @@ def porosity_check(image_path: str,
                    model_path: str, 
                    px_to_mm: float, 
                    plate_thickness_s: float = 10.0,
-                   visualize: bool = True):
+                   visualize: bool = True,
+                   seg_model=None) -> list:
     """
     Implements Double YOLO for Porosity Metrology.
     Returns: A list of dictionaries in the specific 'Crack' style format.
     """
-    model = YOLO(model_path)
+    model = seg_model
 
     # PIL loads as RGB by default, which YOLO expects.
     pil_img = Image.open(image_path).convert("RGB")
