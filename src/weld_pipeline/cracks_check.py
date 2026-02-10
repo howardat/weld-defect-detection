@@ -5,9 +5,9 @@ import json
 from ultralytics import YOLO
 from PIL import Image
 
-def cracks_check(image_path: str, model_path: str):
+def cracks_check(image_path: str, model_path: str, seg_model=None):
     # Load model and original image
-    model = YOLO(model_path)
+    model = seg_model
 
     # PIL loads as RGB by default, which YOLO expects.
     pil_img = Image.open(image_path).convert("RGB")

@@ -10,7 +10,7 @@ from matplotlib.colors import hsv_to_rgb
 def discontinuity_check(image_path: str, 
                         model_path: str, 
                         threshold: float = 0.90, 
-                        visualize: bool = False) -> bool:
+                        visualize: bool = False, seg_model=None) -> bool:
     """
     Checks for weld discontinuities using PIL for RGB consistency.
     """
@@ -30,7 +30,7 @@ def discontinuity_check(image_path: str,
     # 2. Create a BGR copy SPECIFICALLY for YOLO's internal saving
     image_bgr = cv2.cvtColor(image_rgb, cv2.COLOR_RGB2BGR)
 
-    model = YOLO(model_path)
+    model = seg_model
     # YOLO handles RGB numpy arrays correctly
     results = model.predict(image_bgr, conf=0.05, classes=3, agnostic_nms=True, verbose=False, save=False)
 

@@ -15,19 +15,29 @@ dependencies = [
     "scikit-image>=0.24.0",
     "seaborn>=0.13.2",
     "pandas>=2.2.0",
-    "torch>=2.4.0",
-    "torchvision>=0.19.0",
-    "transformers>=4.45.0",
+    "torch (==2.10.0+cu126)",
+    "torchvision (==0.25.0+cu126)",
+    "transformers (>=4.49.0)",
     "accelerate>=0.34.0",
     "bitsandbytes>=0.43.0",
     "pillow>=10.4.0",
-    "opencv-python>=4.10.0"
+    "opencv-python>=4.10.0",
+    "torchaudio (==2.10.0+cu126)"
 ]
 
 [tool.poetry]
 # Keep this for Poetry 2.0 package discovery
 packages = [{ include = "weld_pipeline", from = "src" }]
 
+[[tool.poetry.source]]
+name = "pytorch-gpu"
+url = "https://download.pytorch.org/whl/cu126"
+priority = "supplemental"
+
+[tool.poetry.dependencies]
+torch = {source = "pytorch-gpu"}
+torchvision = {source = "pytorch-gpu"}
+torchaudio = {source = "pytorch-gpu"}
 [build-system]
 requires = ["poetry-core>=2.0.0"]
 build-backend = "poetry.core.masonry.api"
