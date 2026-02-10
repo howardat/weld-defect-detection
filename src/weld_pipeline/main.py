@@ -1,5 +1,5 @@
 from weld_pipeline.visualization import create_comparison_composition
-from weld_pipeline.vlm import WeldAuditor
+from weld_pipeline.vlm import run_audit
 from weld_pipeline.porosity_check import porosity_check
 from weld_pipeline.discontinuity_check import discontinuity_check
 from weld_pipeline.cracks_check import cracks_check
@@ -8,7 +8,7 @@ from ultralytics import YOLO
 from pathlib import Path
 import json
 
-def process_single_image(image_path, model_path, json_dir, report_dir, auditor, seg_model):
+def process_single_image(image_path, json_dir, report_dir, seg_model, model_path):
     """Encapsulates the logic for a single weld analysis."""
     print(f"\n--- Processing: {image_path.name} ---")
     
@@ -16,27 +16,27 @@ def process_single_image(image_path, model_path, json_dir, report_dir, auditor, 
     # Discontinuity check
     disc_bool, refined_masks, line_params = discontinuity_check(
         image_path=str(image_path), 
-        model_path=str(model_path), 
         threshold=0.9, 
         visualize=False,  # Disabled for batch to prevent popup windows
-        seg_model=seg_model
+        seg_model=seg_model,
+        model_path=model_path
     )
 
     # Porosity check
     clean_json_list, raw_pore_data = porosity_check(
         image_path=str(image_path), 
-        model_path=str(model_path), 
         px_to_mm=0.105, 
         plate_thickness_s=10.0,
         visualize=False,
-        seg_model=seg_model  # Disabled for batch to prevent popup windows
+        seg_model=seg_model,  # Disabled for batch to prevent popup windows
+        model_path=model_path
     )
 
     # Cracks check
     crack_boxes_list, crack_masks_list, all_crack_detections, weld_mask = cracks_check(
         image_path=str(image_path), 
-        model_path=str(model_path),
-        seg_model=seg_model
+        seg_model=seg_model,
+        model_path=model_path
     )
 
     # 2. Format JSON for VLM Consumption
@@ -58,8 +58,7 @@ def process_single_image(image_path, model_path, json_dir, report_dir, auditor, 
         json.dump(final_json, f, indent=4)
 
     # 3. Optional VLM Step (Uncomment if needed)
-    # auditor = WeldAuditor()
-    report_v, report_g = auditor.run_single_audit(image_path, image_json_path)
+    report_v, report_g = run_audit(image_path, image_json_path)
     # report_v, report_g = "VLM analysis skipped", "VLM analysis skipped"
 
     # 4. Generate Visual Composition
@@ -83,12 +82,12 @@ def main():
     BASE_DIR = Path(__file__).resolve().parent
     PROJECT_ROOT = BASE_DIR.parent.parent
     
-    IMAGE_DIR = PROJECT_ROOT / "data" / "img"
+    IMAGE_DIR = PROJECT_ROOT / "data" / "dataset"
     MODEL_PATH = PROJECT_ROOT / "models" / "wda11s-seg.pt"
     seg_model = YOLO(MODEL_PATH)
     # Directories for results
     JSON_OUT_DIR = PROJECT_ROOT / "data" / "json_output"
-    REPORT_OUT_DIR = PROJECT_ROOT / "reports" / "vlm_results"
+    REPORT_OUT_DIR = PROJECT_ROOT / "reports" / "vlm_results" / "moondream_new"
     
     # Ensure directories exist
     JSON_OUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -105,21 +104,18 @@ def main():
         return
 
     print(f"Found {len(all_images)} images. Starting batch processing...")
-    auditor = WeldAuditor()
     # Batch Loop
     for target_image in all_images:
-        
-        try:
-            process_single_image(
-                target_image, 
-                MODEL_PATH, 
-                JSON_OUT_DIR, 
-                REPORT_OUT_DIR,
-                auditor=auditor,
-                seg_model=seg_model
-            )
-        except Exception as e:
-            print(f"FAILED to process {target_image.name}: {e}")
+            try:
+                process_single_image(
+                    target_image, 
+                    JSON_OUT_DIR, 
+                    REPORT_OUT_DIR,
+                    seg_model=seg_model,
+                    model_path=MODEL_PATH
+                )
+            except Exception as e:
+                print(f"FAILED to process {target_image.name}: {e}")
 
     print(f"\nSUCCESS: Batch processing complete. Check {REPORT_OUT_DIR} for results.")
 
