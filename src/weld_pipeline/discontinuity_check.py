@@ -18,7 +18,7 @@ def discontinuity_check(image_path: str,
     pad = 20
     gap = 5
     min_area_ratio = 0.05
-    p_intensity = 50 # Adjust this if needed for your specific weld brightness
+    p_intensity = 0 # Adjust this if needed for your specific weld brightness
     unfiltered_masks = []
 
     # =============================
@@ -53,7 +53,8 @@ def discontinuity_check(image_path: str,
         
         # Pixel intensity filtering
         # We keep pixels that are NOT dark (>= p_int)
-        non_dark = (gray >= p_int).astype(np.uint8)
+        # non_dark = (gray >= p_int).astype(np.uint8)
+        _, non_dark = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
         
         final_masks = []
         unfiltered_masks = []
@@ -160,8 +161,8 @@ def discontinuity_check(image_path: str,
         line_params.append({'m': None, 'b': None, 'index': i})
 
     found_discontinuity = False
-    if len(line_params) < 2:
-        return False, [], []
+    # if len(line_params) < 2:
+    #     return False, [], []
     
     print("\n--- Linear Function Similarity Comparisons (Distance-Based) ---")
     for i in range(len(line_params)):
@@ -228,15 +229,19 @@ def discontinuity_check(image_path: str,
             axes[1].imshow(mask_overlay)
         axes[1].set_title("2: Raw YOLO")
 
-        # --- STAGE 3: Unfiltered Refined (Each chunk unique color + Box) ---
-        axes[2].imshow(image_rgb)
+        # --- STAGE 3: Efficient Overlay ---
+        # Create ONE overlay for ALL masks in this stage
+        stage3_overlay = np.zeros((orig_h, orig_w, 4), dtype=np.float32) 
+
         for i, m in enumerate(unfiltered_masks):
             color = colors_unfiltered[i % len(colors_unfiltered)]
-            mask_overlay = np.zeros((orig_h, orig_w, 4))
-            mask_overlay[m > 0] = list(color) + [0.4]
-            axes[2].imshow(mask_overlay)
+            # Apply color only to the pixels where this mask exists
+            stage3_overlay[m > 0] = list(color) + [0.4]
             add_thin_box(axes[2], m, color)
-        axes[2].set_title("3: Unfiltered Refined")
+
+        axes[2].imshow(image_rgb)
+        axes[2].imshow(stage3_overlay) # Only one heavy imshow call
+        del stage3_overlay # Clean up immediately
         # --- SAVE STAGE 3 SPECIFICALLY ---
         # We use the extent of the 3rd axis (index 2) to save just that portion
         extent = axes[2].get_window_extent().transformed(fig.dpi_scale_trans.inverted())
@@ -278,7 +283,12 @@ def discontinuity_check(image_path: str,
         axes[5].set_title("6: Final Fit")
         
         for ax in axes: ax.axis('off')
-        plt.tight_layout(); plt.show()
+        plt.tight_layout(); 
+        plt.show()
+
+        # CRITICAL: Release memory immediately after showing
+        plt.close(fig) 
+        plt.close('all') # Force close everything just to be safe
 
     return found_discontinuity, all_masks, line_params
 
