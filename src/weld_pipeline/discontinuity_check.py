@@ -17,8 +17,7 @@ def discontinuity_check(image_path: str,
     
     pad = 20
     gap = 5
-    min_area_ratio = 0.05
-    p_intensity = 0 # Adjust this if needed for your specific weld brightness
+    min_area_ratio = 0.03
     unfiltered_masks = []
 
     # =============================
@@ -44,7 +43,7 @@ def discontinuity_check(image_path: str,
     # =============================
     # INTERNAL UTILITIES
     # =============================
-    def refine_mask_internal(original_rgb, yolo_masks_data, min_area_ratio, p_int):
+    def refine_mask_internal(original_rgb, yolo_masks_data, min_area_ratio):
         h, w = original_rgb.shape[:2]
         min_segment_area = int(h * w * min_area_ratio)
         
@@ -123,7 +122,7 @@ def discontinuity_check(image_path: str,
         
         if crop_results[0].masks is not None:
             # 1. Get refined and unfiltered segments from the crop
-            refined, unfiltered = refine_mask_internal(crop_image_bgr, crop_results[0].masks.data, min_area_ratio, p_intensity)
+            refined, unfiltered = refine_mask_internal(crop_image_bgr, crop_results[0].masks.data, min_area_ratio)
             
             # 2. Resize and place UNFILTERED masks
             for m_unf in unfiltered:
