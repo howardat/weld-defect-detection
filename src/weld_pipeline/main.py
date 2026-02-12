@@ -82,7 +82,7 @@ def main():
     BASE_DIR = Path(__file__).resolve().parent
     PROJECT_ROOT = BASE_DIR.parent.parent
     
-    IMAGE_DIR = PROJECT_ROOT / "data" / "dataset"
+    IMAGE_DIR = PROJECT_ROOT / "data" / "img"
     MODEL_PATH = PROJECT_ROOT / "models" / "wda11s-seg.pt"
     seg_model = YOLO(MODEL_PATH)
     # Directories for results

@@ -27,7 +27,6 @@ def load_moondream(model_id="vikhyatk/moondream2"):
 # -------------------------
 
 SYSTEM_PROMPT = (
-    "You are an ISO 5817 welding inspector.\n\n"
     "Look at the weld image and answer the following:\n\n"
     "1. Are there visible cracks? Answer PASS or FAIL and explain briefly.\n"
     "2. Are there visible pores? How many?\n"

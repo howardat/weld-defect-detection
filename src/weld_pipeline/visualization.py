@@ -198,7 +198,7 @@ def render_report_column(text, width=600, height=1000, title=""):
 
 def create_comparison_composition(image_path, report_v_text, report_g_text, output_path, **kwargs):
     # 1. Setup the main storage folder
-    root_folder = "../../paper_imgs"
+    root_folder = "../../paper_imgs_moondream"
     
     # 2. Get the base filename (e.g., 'welding_sample_01')
     base_name = os.path.splitext(os.path.basename(image_path))[0]
