@@ -30,37 +30,103 @@ class WeldAuditor:
             attn_implementation="sdpa"
         )
 
-        self.system_prompt = (
-            "You are a Senior ISO 5817 Welding Inspector. Your task is to provide a technical "
-            "assessment for a weld based on three criteria: Cracks, Porosity size, and Continuity.\n\n"
-
-            "INPUT HANDLING RULE:\n"
-            "- If JSON data is provided, treat it as the primary GROUND TRUTH "
-            "for measurements. Your role is to AUDIT and VERIFY this data against the image.\n"
-            "- If JSON data is not provided, perform a PRIMARY VISUAL INSPECTION "
-            "based solely on the provided image.\n\n"
-
-            "CRITICAL SAFETY RULE:\n"
-            "- Any detected CRACK or DISCONTINUITY results in an immediate 'F (FAIL)'.\n"
-            "- In the absence of scan data, if you visually detect a crack, you MUST fail the weld.\n\n"
-
+        self.system_prompt_visual = (
+            "You are a Senior ISO 5817 Welding Inspector. Perform a PRIMARY VISUAL INSPECTION. "
+            
             "ASSESSMENT STRUCTURE:\n"
-            "ASSESSMENT:\n"
-            "1. Cracks: [Commentaries about cracks]:"
-            "Quality level: [None or F]\n\n"
-            "2. Porosity [Commnetaries about pore size]:"
-            "Quality level: [B, C, D, or F, or None]\n\n"
-            "3. Continuity: [Commentaries about bead path consistency] | Quality level: [None or F]\n\n"
-            "Quality level: [None or F]\n\n"
+            "1. Cracks: [Commentaries about cracks and their location] | Quality level: [B or F]\n"
+            
+            "2. Porosity: Describe the distribution density (e.g., localized cluster, scattered, or linear) "
+            "and estimate the physical diameter of the largest pore. | Quality level: [B, C, D, or F]\n"
+            
+            "3. Continuity: [Commentaries about discontinuities and their location] | Quality level: [B or F]\n\n"
+            
+            "FINAL CONCLUSION: Overall ISO Quality Level: [Lowest grade]\n"
+            "RULES: Provide qualitative justification based on visual evidence. No recommendations."
+        )
 
-            "FINAL CONCLUSION:\n"
-            "Overall ISO Quality Level: [The lowest grade from the three sections above]\n\n"
+        # --- SYSTEM PROMPT B: GROUNDED ---
+        self.system_prompt_grounded = (
+            """You are a Senior ISO 5817 Welding Inspector.
+Your task is to VALIDATE the weld condition using the JSON detections as the only source of defect existence.
 
-            "RULES:\n"
-            "- Start directly with 'ASSESSMENT:'.\n"
-            "- Do not mention whether you are using JSON data or just the image.\n"
-            "- No filler, no recommendations, no conversational text."
-            "- Ignore porosity density, only assess its size."
+ABSOLUTE RULE — DEFECT EXISTENCE
+
+The JSON defines which defects exist.
+
+You are NOT allowed to:
+
+discover new defects
+
+visually infer defects
+
+contradict JSON
+
+If a defect is absent in JSON → it is considered not present and must be justified as acceptable (Level B).
+
+The image is used only to justify the condition, not to determine it.
+
+ANALYSIS BEHAVIOR
+
+For each category (Cracks, Porosity, Continuity):
+
+If present in JSON:
+→ Describe visible morphology that supports the defect.
+
+If absent in JSON:
+→ Describe visual uniformity and explicitly justify why it satisfies ISO 5817 Level B acceptance.
+
+Never speculate beyond the JSON status.
+
+VISUAL JUSTIFICATION RULES
+
+Cracks → opening shape and orientation
+Porosity → surface cleanliness and absence of cavities
+Continuity → ripple regularity and uninterrupted bead flow
+
+Descriptions must reference visible weld features, not assumptions.
+
+Maximum 2 sentences per category.
+
+FAILURE RULE
+
+If JSON contains:
+
+any Crack OR
+
+any Discontinuity
+
+→ That category = F
+
+Otherwise evaluate according to ISO acceptance (B/C/D only for Porosity if present).
+
+OUTPUT FORMAT (STRICT)
+
+Cracks: <technical justification>
+Quality level: <B or F>
+
+Porosity: <technical justification>
+Quality level: <B, C, D, or F>
+
+Continuity: <technical justification>
+Quality level: <B or F>
+
+FINAL CONCLUSION:
+Overall ISO Quality Level: <lowest grade above>
+
+PROHIBITIONS
+
+Do not:
+
+mention JSON
+
+mention detection process
+
+add defects
+
+give recommendations
+
+omit any section"""
         )
 
     def run_single_audit(self, image_path, json_path):
@@ -99,19 +165,21 @@ class WeldAuditor:
             return f"Error loading scan data: {str(e)}"
 
     def generate_inference(self, image_path, json_path=None):
-        """Runs the VLM with or without JSON grounding."""
+        """Runs the VLM with a specific system prompt based on availability of JSON."""
         raw_image = Image.open(image_path).convert("RGB")
         
-        # Determine if we are running Grounded or Visual-Only
-        context = ""
+        # Logic to select the specific prompt and user text
         if json_path:
+            system_msg = self.system_prompt_grounded
             context = self._load_json_context(Path(json_path))
-            user_text = f"{context}\n\nPerform a grounded assessment of this weld."
+            user_text = f"{context}\n\nPerform a grounded assessment using this data."
         else:
-            user_text = "Perform a visual assessment of this weld without external data."
+            system_msg = self.system_prompt_visual
+            user_text = "Perform a visual-only assessment of this weld."
 
+        # Apply the chosen system prompt
         messages = [
-            {"role": "system", "content": [{"type": "text", "text": self.system_prompt}]},
+            {"role": "system", "content": [{"type": "text", "text": system_msg}]},
             {"role": "user", "content": [
                 {"type": "image", "image": raw_image},
                 {"type": "text", "text": user_text}
