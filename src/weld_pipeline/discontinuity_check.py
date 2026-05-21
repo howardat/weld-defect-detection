@@ -1,3 +1,4 @@
+from pathlib import Path
 from skimage.morphology import skeletonize
 from PIL import Image
 import matplotlib.pyplot as plt
@@ -6,6 +7,7 @@ import cv2
 from ultralytics import YOLO
 import torch
 from matplotlib.colors import hsv_to_rgb
+from weld_pipeline import timing
 
 def discontinuity_check(image_path: str, 
                         model_path: str, 
@@ -31,8 +33,10 @@ def discontinuity_check(image_path: str,
     image_bgr = cv2.cvtColor(image_rgb, cv2.COLOR_RGB2BGR)
 
     model = seg_model
+    _img_name = Path(image_path).name
     # YOLO handles RGB numpy arrays correctly
-    results = model.predict(image_bgr, conf=0.01, classes=3, agnostic_nms=True, verbose=False, save=False)
+    with timing.track(_img_name, "discontinuity_check", "yolo_stage1"):
+        results = model.predict(image_bgr, conf=0.01, classes=3, agnostic_nms=True, verbose=False, save=False)
 
     if results[0].masks is None or len(results[0].masks.data) == 0:
         print("No detections in Stage 1.")
@@ -110,15 +114,16 @@ def discontinuity_check(image_path: str,
     all_masks = []
     all_unfiltered_full = [] # New list to store full-sized unfiltered masks
 
-    for mask_binary in raw_masks:
+    for _mask_idx, mask_binary in enumerate(raw_masks):
         bbox = get_bbox_internal(mask_binary, padding=pad)
         if bbox is None: continue
         x1, y1, x2, y2 = bbox
-        
-        crop_image_bgr = image_bgr[y1:y2, x1:x2]
-        crop_h, crop_w = crop_image_bgr.shape[:2] # THE TARGET SIZE
 
-        crop_results = model.predict(crop_image_bgr, conf=0.01, iou=0.5, classes=3, agnostic_nms=False, verbose=False, save=False)
+        crop_image_bgr = image_bgr[y1:y2, x1:x2]
+        crop_h, crop_w = crop_image_bgr.shape[:2]  # THE TARGET SIZE
+
+        with timing.track(_img_name, "discontinuity_check", "yolo_stage2", _mask_idx):
+            crop_results = model.predict(crop_image_bgr, conf=0.01, iou=0.5, classes=3, agnostic_nms=False, verbose=False, save=False)
         
         if crop_results[0].masks is not None:
             # 1. Get refined and unfiltered segments from the crop

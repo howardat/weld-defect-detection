@@ -1,9 +1,11 @@
+from pathlib import Path
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 import json
 from ultralytics import YOLO
 from PIL import Image
+from weld_pipeline import timing
 
 def porosity_check(image_path: str, 
                    model_path: str, 
@@ -16,6 +18,7 @@ def porosity_check(image_path: str,
     Returns: A list of dictionaries in the specific 'Crack' style format.
     """
     model = seg_model
+    _img_name = Path(image_path).name
 
     # PIL loads as RGB by default, which YOLO expects.
     pil_img = Image.open(image_path).convert("RGB")
@@ -27,7 +30,7 @@ def porosity_check(image_path: str,
 
     h_orig, w_orig = image_bgr.shape[:2]
     gray_full = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2GRAY)
-    
+
     # ISO 5817 Limits for Surface Pore (2017)
     if plate_thickness_s <= 3.0:
         # Strict limits for thin plates
@@ -41,24 +44,26 @@ def porosity_check(image_path: str,
         lim_D = min(0.3 * plate_thickness_s, 3.0)
 
     # Stage 1: Weld Detection (Class 3)
-    stage1_results = model.predict(image_bgr, conf=0.10, classes=3, verbose=False, show=False, save=True)
+    with timing.track(_img_name, "porosity_check", "yolo_stage1"):
+        stage1_results = model.predict(image_bgr, conf=0.10, classes=3, verbose=False, show=False, save=True)
     
     pore_entries = []
     pad = 20
 
     if stage1_results[0].boxes is not None:
-        for weld_box in stage1_results[0].boxes:
+        for _box_idx, weld_box in enumerate(stage1_results[0].boxes):
             x1_w, y1_w, x2_w, y2_w = map(int, weld_box.xyxy[0].cpu().numpy())
-            
+
             x1_c, y1_c = max(0, x1_w - pad), max(0, y1_w - pad)
             x2_c, y2_c = min(w_orig, x2_w + pad), min(h_orig, y2_w + pad)
-            
+
             crop_bgr = image_bgr[y1_c:y2_c, x1_c:x2_c]
             crop_gray = gray_full[y1_c:y2_c, x1_c:x2_c]
             dark_mask_crop = (crop_gray < 60).astype(np.uint8)
 
             # Stage 2: Pore Detection (Class 1)
-            stage2_results = model.predict(crop_bgr, conf=0.05, iou=0.8, classes=1, verbose=False)
+            with timing.track(_img_name, "porosity_check", "yolo_stage2", _box_idx):
+                stage2_results = model.predict(crop_bgr, conf=0.05, iou=0.8, classes=1, verbose=False)
 
             if stage2_results[0].masks is not None:
                 c_h, c_w = crop_bgr.shape[:2]

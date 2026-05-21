@@ -3,7 +3,9 @@ from weld_pipeline.vlm import WeldAuditor
 from weld_pipeline.porosity_check import porosity_check
 from weld_pipeline.discontinuity_check import discontinuity_check
 from weld_pipeline.cracks_check import cracks_check
+from weld_pipeline import timing
 from ultralytics import YOLO
+import torch
 
 from pathlib import Path
 import json
@@ -57,8 +59,9 @@ def process_single_image(image_path, model_path, json_dir, report_dir, auditor, 
     with open(image_json_path, 'w') as f:
         json.dump(final_json, f, indent=4)
 
-    # 3. Optional VLM Step (Uncomment if needed)
-    # auditor = WeldAuditor()
+    # 3. Release YOLO's cached CUDA memory before the VLM to avoid VRAM contention
+    torch.cuda.empty_cache()
+
     report_v, report_g = auditor.run_single_audit(image_path, image_json_path)
     # report_v, report_g = "VLM analysis skipped", "VLM analysis skipped"
 
@@ -84,12 +87,15 @@ def main():
     PROJECT_ROOT = BASE_DIR.parent.parent
     
     IMAGE_DIR = PROJECT_ROOT / "data" / "tmp"
+    # IMAGE_DIR = Path("C:/Users/01/Projects/weld-dataset/WDA-3/test/images")
     MODEL_PATH = PROJECT_ROOT / "models" / "wda11s-seg.pt"
     seg_model = YOLO(MODEL_PATH)
     # Directories for results
     JSON_OUT_DIR = PROJECT_ROOT / "data" / "json_output"
     REPORT_OUT_DIR = PROJECT_ROOT / "reports" / "vlm_results" / "new"
     
+    TIMING_CSV = PROJECT_ROOT / "reports" / "inference_times.csv"
+
     # Ensure directories exist
     JSON_OUT_DIR.mkdir(parents=True, exist_ok=True)
     REPORT_OUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -104,7 +110,9 @@ def main():
         print(f"No images found in {IMAGE_DIR}")
         return
 
-    print(f"Found {len(all_images)} images. Starting batch processing...")
+    MAX_IMAGES = 100
+    all_images = all_images[:MAX_IMAGES]
+    print(f"Found {len(all_images)} images (capped at {MAX_IMAGES}). Starting batch processing...")
     auditor = WeldAuditor()
     # Batch Loop
     for target_image in all_images:
@@ -121,7 +129,9 @@ def main():
         except Exception as e:
             print(f"FAILED to process {target_image.name}: {e}")
 
+    timing.save_csv(TIMING_CSV)
     print(f"\nSUCCESS: Batch processing complete. Check {REPORT_OUT_DIR} for results.")
+    print(f"Inference times saved to {TIMING_CSV}")
 
 if __name__ == "__main__":
     main()
