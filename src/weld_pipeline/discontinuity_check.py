@@ -9,9 +9,10 @@ import torch
 from matplotlib.colors import hsv_to_rgb
 from weld_pipeline import timing
 
-def discontinuity_check(image_path: str, 
-                        model_path: str, 
-                        threshold: float = 0.90, 
+def discontinuity_check(image_path: str,
+                        model_path: str,
+                        threshold: float = 0.90,
+                        otsu_multiplier: float = 1.0,
                         visualize: bool = False, seg_model=None) -> bool:
     """
     Checks for weld discontinuities using PIL for RGB consistency.
@@ -68,7 +69,7 @@ def discontinuity_check(image_path: str,
             weld_pixels = gray[mask_big > 0]
             if len(weld_pixels) > 0:
                 thresh_val, _ = cv2.threshold(weld_pixels.reshape(-1, 1), 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-                non_dark = (gray >= thresh_val * 1).astype(np.uint8)
+                non_dark = (gray >= thresh_val * otsu_multiplier).astype(np.uint8)
             else:
                 _, non_dark = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 

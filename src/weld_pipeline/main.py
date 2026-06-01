@@ -8,19 +8,22 @@ from ultralytics import YOLO
 import torch
 
 from pathlib import Path
+from datetime import datetime
 import json
 
-def process_single_image(image_path, model_path, json_dir, report_dir, seg_model, auditor=None):
+def process_single_image(image_path, model_path, json_dir, report_dir, seg_model,
+                         disc_threshold=0.9, otsu_multiplier=0.7, auditor=None):
     """Encapsulates the logic for a single weld analysis."""
     print(f"\n--- Processing: {image_path.name} ---")
-    
+
     # 1. Run Analysis Modules
     # Discontinuity check
     disc_bool, refined_masks, line_params = discontinuity_check(
-        image_path=str(image_path), 
-        model_path=str(model_path), 
-        threshold=0.9,
-        visualize=False,  # Disabled for batch to prevent popup windows
+        image_path=str(image_path),
+        model_path=str(model_path),
+        threshold=disc_threshold,
+        otsu_multiplier=otsu_multiplier,
+        visualize=False,
         seg_model=seg_model
     )
 
@@ -54,8 +57,8 @@ def process_single_image(image_path, model_path, json_dir, report_dir, seg_model
             item['bbox'] = [int(b['x1']), int(b['y1']), int(b['x2']), int(b['y2'])]
             item.pop('box', None)
     
-    # Save image-specific JSON
-    image_json_path = json_dir / f"{image_path.stem}.json"
+    # Save image-specific JSON — filename encodes the parameter values used
+    image_json_path = json_dir / f"{image_path.stem}_otsu{otsu_multiplier}_sim{disc_threshold}.json"
     with open(image_json_path, 'w') as f:
         json.dump(final_json, f, indent=4)
 
@@ -97,7 +100,9 @@ def main():
     JSON_OUT_DIR = PROJECT_ROOT / "data" / "json_output"
     REPORT_OUT_DIR = PROJECT_ROOT / "reports" / "vlm_results" / "new"
     
-    USE_VLM = False  # Set to True to enable VLM reports
+    USE_VLM = False        # Set to True to enable VLM reports
+    DISC_THRESHOLD = 0.9   # Similarity threshold for discontinuity detection
+    OTSU_MULTIPLIER = 0.8  # Multiplier applied to Otsu threshold (< 1.0 = softer)
 
     TIMING_CSV = PROJECT_ROOT / "reports" / "inference_times.csv"
 
@@ -123,7 +128,8 @@ def main():
         auditor = WeldAuditor()
     else:
         auditor = None
-    DISC_RESULTS_PATH = REPORT_OUT_DIR / "discontinuity_results.json"
+    _ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    DISC_RESULTS_PATH = REPORT_OUT_DIR / f"discontinuity_results_otsu{OTSU_MULTIPLIER}_sim{DISC_THRESHOLD}_{_ts}.json"
     discontinuity_results = {}
 
     # Batch Loop
@@ -136,6 +142,8 @@ def main():
                 JSON_OUT_DIR,
                 REPORT_OUT_DIR,
                 seg_model=seg_model,
+                disc_threshold=DISC_THRESHOLD,
+                otsu_multiplier=OTSU_MULTIPLIER,
                 auditor=auditor,
             )
             discontinuity_results[target_image.name] = bool(disc_bool)
