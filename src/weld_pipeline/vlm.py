@@ -1,34 +1,13 @@
-import torch
+import ollama
 import json
-from PIL import Image
+import base64
 from pathlib import Path
-from transformers import AutoProcessor, Gemma3ForConditionalGeneration, BitsAndBytesConfig
+from weld_pipeline import timing
 
 class WeldAuditor:
-    def __init__(self, model_id="google/gemma-3-12b-it"):
-        print(f"--- Loading {model_id} ---")
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.dtype = torch.bfloat16
-        
-        bnb_config = BitsAndBytesConfig(
-            load_in_4bit=True,
-            bnb_4bit_compute_dtype=self.dtype,
-            bnb_4bit_quant_type="nf4"
-        )
-        
-        self.processor = AutoProcessor.from_pretrained(
-            model_id, 
-            trust_remote_code=True, 
-            use_fast=True 
-        )
-        self.model = Gemma3ForConditionalGeneration.from_pretrained(
-            model_id,
-            quantization_config=bnb_config,
-            device_map={"": 0}, 
-            trust_remote_code=True,
-            dtype=self.dtype, # Using 'dtype' instead of 'torch_dtype'
-            attn_implementation="sdpa"
-        )
+    def __init__(self, model_id="gemma4"):
+        print(f"--- Using Ollama with {model_id} ---")
+        self.model_id = model_id
 
         self.system_prompt_visual = (
             "You are a Senior ISO 5817 Welding Inspector. Perform a PRIMARY VISUAL INSPECTION. "
@@ -127,7 +106,7 @@ add defects
 give recommendations
 
 omit any section"""
-        )
+        )    
 
     def run_single_audit(self, image_path, json_path):
         """Runs both inferences and returns them as strings for main.py."""
@@ -165,39 +144,38 @@ omit any section"""
             return f"Error loading scan data: {str(e)}"
 
     def generate_inference(self, image_path, json_path=None):
-        """Runs the VLM with a specific system prompt based on availability of JSON."""
-        raw_image = Image.open(image_path).convert("RGB")
-        
-        # Logic to select the specific prompt and user text
+        # Gemma 4 requires images as base64 or bytes in Ollama
+        with open(image_path, 'rb') as f:
+            image_data = f.read()
+
         if json_path:
             system_msg = self.system_prompt_grounded
             context = self._load_json_context(Path(json_path))
-            user_text = f"{context}\n\nPerform a grounded assessment using this data."
+            user_text = f"{context}\n\nPerform a grounded assessment."
         else:
             system_msg = self.system_prompt_visual
             user_text = "Perform a visual-only assessment of this weld."
 
-        # Apply the chosen system prompt
-        messages = [
-            {"role": "system", "content": [{"type": "text", "text": system_msg}]},
-            {"role": "user", "content": [
-                {"type": "image", "image": raw_image},
-                {"type": "text", "text": user_text}
-            ]}
-        ]
+        _img_name = Path(image_path).name
+        _call_type = "vlm_grounded" if json_path else "vlm_visual"
 
-        prompt = self.processor.apply_chat_template(messages, add_generation_prompt=True, tokenize=False)
-        inputs = self.processor(text=prompt, images=raw_image, return_tensors="pt").to(self.device)
-
-        with torch.inference_mode():
-            output = self.model.generate(
-                **inputs,
-                max_new_tokens=512,
-                do_sample=False, # Greedy search for stability
-                use_cache=True
+        # Gemma 4 supports native system roles in Ollama
+        with timing.track(_img_name, "vlm", _call_type):
+            response = ollama.chat(
+                model=self.model_id,
+                keep_alive=-1,  # Keep model pinned in VRAM for the entire batch
+                messages=[
+                    {'role': 'system', 'content': system_msg},
+                    {'role': 'user', 'content': user_text, 'images': [image_data]}
+                ],
+                options={
+                    'temperature': 1.0,  # Recommended for Gemma 4
+                    'top_p': 0.95,
+                    'top_k': 64
+                }
             )
-        
-        return self.processor.decode(output[0][inputs["input_ids"].shape[1]:], skip_special_tokens=True).strip()
+
+        return response['message']['content'].strip()
 
 def run_comparative_batch(image_dir, json_dir, output_dir):
     """Processes all images and generates two reports for each."""

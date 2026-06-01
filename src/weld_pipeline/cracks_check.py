@@ -4,10 +4,12 @@ import numpy as np
 import json
 from ultralytics import YOLO
 from PIL import Image
+from weld_pipeline import timing
 
 def cracks_check(image_path: str, model_path: str, seg_model=None):
     # Load model and original image
     model = seg_model
+    _img_name = Path(image_path).name
 
     # PIL loads as RGB by default, which YOLO expects.
     pil_img = Image.open(image_path).convert("RGB")
@@ -17,9 +19,10 @@ def cracks_check(image_path: str, model_path: str, seg_model=None):
     image_bgr = cv2.cvtColor(image_rgb, cv2.COLOR_RGB2BGR)
 
     h, w = image_bgr.shape[:2]
-    
+
     # --- STAGE 1: Detection of weld/candidate areas (Class 3) ---
-    stage1_results = model.predict(image_bgr, conf=0.25, iou=0.5, classes=3, verbose=False)
+    with timing.track(_img_name, "cracks_check", "yolo_stage1"):
+        stage1_results = model.predict(image_bgr, conf=0.25, iou=0.5, classes=3, verbose=False)
     
     all_crack_detections = [] # For JSON logging
     crack_masks_list = []     # For Visualization
@@ -28,16 +31,17 @@ def cracks_check(image_path: str, model_path: str, seg_model=None):
     pad = 30 
 
     if stage1_results[0].boxes is not None:
-        for box in stage1_results[0].boxes:
+        for _crop_idx, box in enumerate(stage1_results[0].boxes):
             x1, y1, x2, y2 = map(int, box.xyxy[0].cpu().numpy())
-            
+
             x1_p, y1_p = max(0, x1 - pad), max(0, y1 - pad)
             x2_p, y2_p = min(w, x2 + pad), min(h, y2 + pad)
-            
+
             crop = image_bgr[y1_p:y2_p, x1_p:x2_p]
-            
+
             # --- STAGE 2: Detection + Segmentation of cracks (Class 0) ---
-            stage2_results = model.predict(crop, conf=0.05, iou=0.2, classes=0, verbose=False)
+            with timing.track(_img_name, "cracks_check", "yolo_stage2", _crop_idx):
+                stage2_results = model.predict(crop, conf=0.05, iou=0.2, classes=0, verbose=False)
             result_crop = stage2_results[0]
             
             if result_crop.boxes is not None:
@@ -79,8 +83,8 @@ def cracks_check(image_path: str, model_path: str, seg_model=None):
     with open(out_path, 'w') as f:
         json.dump(all_crack_detections, f, indent=4)
 
-    # RETURN THREE VALUES to avoid unpacking errors in main.py
-    return crack_boxes_list, crack_masks_list, all_crack_detections, stage1_results[0].masks.xy
+    weld_mask_xy = stage1_results[0].masks.xy if stage1_results[0].masks is not None else []
+    return crack_boxes_list, crack_masks_list, all_crack_detections, weld_mask_xy
 
 if __name__ == '__main__':
     boxes, masks, raw_json = cracks_check(
