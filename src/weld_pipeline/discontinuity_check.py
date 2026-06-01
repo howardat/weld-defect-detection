@@ -53,22 +53,25 @@ def discontinuity_check(image_path: str,
         
         # CRITICAL: Since we use PIL, we must use RGB2GRAY
         gray = cv2.cvtColor(original_rgb, cv2.COLOR_RGB2GRAY)
-        
-        # Pixel intensity filtering
-        # We keep pixels that are NOT dark (>= p_int)
-        # non_dark = (gray >= p_int).astype(np.uint8)
-        _, non_dark = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        
+
         final_masks = []
         unfiltered_masks = []
 
         for mask_data in yolo_masks_data:
-            if isinstance(mask_data, torch.Tensor): 
+            if isinstance(mask_data, torch.Tensor):
                 mask_data = mask_data.cpu().numpy()
-            
+
             mask_big = cv2.resize(mask_data, (w, h), interpolation=cv2.INTER_NEAREST)
             mask_big = (mask_big > 0.5).astype(np.uint8)
-            
+
+            # Otsu threshold computed only from weld-region pixels
+            weld_pixels = gray[mask_big > 0]
+            if len(weld_pixels) > 0:
+                thresh_val, _ = cv2.threshold(weld_pixels.reshape(-1, 1), 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+                non_dark = (gray >= thresh_val * 1).astype(np.uint8)
+            else:
+                _, non_dark = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+
             # Combine YOLO's shape prediction with intensity filtering
             weld_clean = cv2.bitwise_and(mask_big, non_dark)
             
@@ -153,48 +156,43 @@ def discontinuity_check(image_path: str,
     line_params = []
     for i, mask in enumerate(all_masks):
         skeleton = skeletonize(mask.astype(bool))
-        coords = np.argwhere(skeleton)
+        coords = np.argwhere(skeleton).astype(float)  # (N, 2) as (y, x)
         if len(coords) >= gap * 2:
-            coords = coords[np.argsort(coords[:, 1])] # Sort by X
-            y_pts = coords[gap:-gap, 0]
-            x_pts = coords[gap:-gap, 1]
-            if len(x_pts) > 2:
-                m, b = np.polyfit(x_pts, y_pts, 1)
-                line_params.append({'m': m, 'b': b, 'index': i})
-                continue
-        line_params.append({'m': None, 'b': None, 'index': i})
+            centroid = coords.mean(axis=0)
+            _, _, vt = np.linalg.svd(coords - centroid, full_matrices=False)
+            direction = vt[0]  # principal axis (dy, dx), already unit length
+            angle = np.arctan2(direction[0], direction[1])
+            if angle < 0:
+                angle += np.pi  # normalize to [0, pi)
+            line_params.append({'angle': angle, 'centroid': centroid, 'direction': direction, 'index': i})
+        else:
+            line_params.append({'angle': None, 'centroid': None, 'direction': None, 'index': i})
 
     found_discontinuity = False
     # if len(line_params) < 2:
     #     return False, [], []
     
-    print("\n--- Linear Function Similarity Comparisons (Distance-Based) ---")
+    print("\n--- Linear Function Similarity Comparisons (Angle + Perpendicular Distance) ---")
     for i in range(len(line_params)):
         for j in range(i + 1, len(line_params)):
-            # Extract slope (m) and intercept (b)
-            m1, b1 = line_params[i]['m'], line_params[i]['b']
-            m2, b2 = line_params[j]['m'], line_params[j]['b']
-            
-            if None not in [m1, m2, b1, b2]:
-                # Define the parameter vectors
-                v1 = np.array([m1, b1])
-                v2 = np.array([m2, b2])
-                
-                # 1. Calculate the Euclidean distance between the two functions
-                distance = np.linalg.norm(v1 - v2)
-                
-                # 2. Calculate the sum of the magnitudes (for normalization)
-                mag_sum = np.linalg.norm(v1) + np.linalg.norm(v2)
-                
-                # 3. Calculate Normalized Similarity
-                # If both lines are at the origin (0,0), mag_sum is 0. 
-                if mag_sum == 0:
-                    similarity = 1.0
-                else:
-                    similarity = 1.0 - (distance / mag_sum)
-                
-                print(f"Mask {i} vs Mask {j} | Similarity: {similarity:.4f}")
-                
+            lp_i, lp_j = line_params[i], line_params[j]
+
+            if lp_i['angle'] is not None and lp_j['angle'] is not None:
+                # Angular similarity: 1=parallel, 0=perpendicular (handles vertical correctly)
+                angle_diff = abs(lp_i['angle'] - lp_j['angle'])
+                angle_diff = min(angle_diff, np.pi - angle_diff)  # fold to [0, pi/2]
+                angle_sim = 1.0 - (2 * angle_diff / np.pi)
+
+                # Perpendicular distance from centroid_j to line_i
+                diff = lp_j['centroid'] - lp_i['centroid']
+                perp_dist = abs(float(np.cross(lp_i['direction'], diff)))
+                img_diag = np.hypot(orig_h, orig_w)
+                pos_sim = max(0.0, 1.0 - (perp_dist / (img_diag * 0.15)))
+
+                similarity = 0.6 * angle_sim + 0.6 * pos_sim
+
+                print(f"Mask {i} vs Mask {j} | angle_sim={angle_sim:.3f}  pos_sim={pos_sim:.3f}  combined={similarity:.4f}")
+
                 if similarity >= threshold:
                     found_discontinuity = True
             else:
@@ -279,10 +277,13 @@ def discontinuity_check(image_path: str,
             add_thin_box(axes[5], m, color)
             
         for i, lp in enumerate(line_params):
-            if lp['m'] is not None:
+            if lp['angle'] is not None:
                 color = colors_filtered[i % len(colors_filtered)]
-                x_vals = np.array([0, orig_w])
-                y_vals = lp['m'] * x_vals + lp['b']
+                cy, cx = lp['centroid']
+                dy, dx = lp['direction']
+                t = float(max(orig_w, orig_h))
+                x_vals = [cx - t * dx, cx + t * dx]
+                y_vals = [cy - t * dy, cy + t * dy]
                 axes[5].plot(x_vals, y_vals, color=color, lw=1.5)
         axes[5].set_title("6: Final Fit")
         

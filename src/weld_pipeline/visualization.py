@@ -111,11 +111,19 @@ def draw_technical_overlay(image_path, line_params, discontinuity_masks, weld_ma
 
             if i < len(line_params):
                 lp = line_params[i]
-                m, b = lp.get('m'), lp.get('b')
-                if m is not None and b is not None:
-                    lx1, lx2 = 0, base_img.width
-                    ly1, ly2 = int(m * lx1 + b), int(m * lx2 + b)
-                    draw_ui.line([(lx1, ly1), (lx2, ly2)], fill=fill_color, width=THICK_LINE)
+                centroid = lp.get('centroid')
+                direction = lp.get('direction')
+                if centroid is not None:
+                    cy, cx = centroid
+                    if direction is not None:
+                        dy_dir, dx_dir = direction
+                        t = float(max(base_img.width, base_img.height))
+                        lx1, ly1 = int(cx - t * dx_dir), int(cy - t * dy_dir)
+                        lx2, ly2 = int(cx + t * dx_dir), int(cy + t * dy_dir)
+                        draw_ui.line([(lx1, ly1), (lx2, ly2)], fill=fill_color, width=THICK_LINE)
+                    r = max(4, THICK_LINE * 2)
+                    draw_ui.ellipse([(int(cx) - r, int(cy) - r), (int(cx) + r, int(cy) + r)],
+                                    fill=fill_color, outline=(255, 255, 255, 220), width=max(1, LINE_WIDTH // 2))
 
             if show_labels and dw > 0:
                 label = "WELD"
