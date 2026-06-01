@@ -19,7 +19,18 @@ data/
 results/
 runs/
 
+# Reports & generated outputs
+reports/
+paper_imgs/
+paper_imgs_new/
+
 # Ignore local images used for testing
 *.jpg
 *.png
 *.jpeg
+
+# --- IDE & Tools ---
+.vscode/
+.idea/
+*.swp
+*.swo
