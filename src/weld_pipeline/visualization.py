@@ -86,7 +86,7 @@ def draw_technical_overlay(image_path, line_params, discontinuity_masks, weld_ma
                 draw_ui.rectangle([bx, by - th - (PAD*2), bx + tw + (PAD*2), by], fill=BRAND_BLUE)
                 draw_ui.text((bx + PAD, by - th - PAD), label, font=font_main, fill=WHITE)
 
-    # --- 2. Discontinuity Masks & Lines ---
+    # --- 2. Discontinuity Masks ---
     if has_discontinuity:
         for i, mask in enumerate(discontinuity_masks):
             # Generate rotating HSL color
@@ -94,7 +94,7 @@ def draw_technical_overlay(image_path, line_params, discontinuity_masks, weld_ma
             rgb_tuple = ImageColor.getrgb(f"hsl({hue}, 75%, 50%)")
             base_color = rgb_tuple + (120,)
             fill_color = rgb_tuple + (255,)
-            
+
             if isinstance(mask, np.ndarray):
                 mask_pil = Image.fromarray((mask * 255).astype(np.uint8)).convert("L")
                 mask_layer.paste(base_color, (0, 0), mask=mask_pil)
@@ -109,34 +109,39 @@ def draw_technical_overlay(image_path, line_params, discontinuity_masks, weld_ma
                 np_pts = np.array(mask)
                 dx, dy, dw, dh = cv2.boundingRect(np_pts)
 
-            if i < len(line_params):
-                lp = line_params[i]
-                centroid = lp.get('centroid')
-                direction = lp.get('direction')
-                if centroid is not None:
-                    cy, cx = centroid
-                    if direction is not None:
-                        dy_dir, dx_dir = direction
-                        t = float(max(base_img.width, base_img.height))
-                        lx1, ly1 = int(cx - t * dx_dir), int(cy - t * dy_dir)
-                        lx2, ly2 = int(cx + t * dx_dir), int(cy + t * dy_dir)
-                        draw_ui.line([(lx1, ly1), (lx2, ly2)], fill=fill_color, width=THICK_LINE)
-                    r = max(4, THICK_LINE * 2)
-                    draw_ui.ellipse([(int(cx) - r, int(cy) - r), (int(cx) + r, int(cy) + r)],
-                                    fill=fill_color, outline=(255, 255, 255, 220), width=max(1, LINE_WIDTH // 2))
-
             if show_labels and dw > 0:
                 label = "WELD"
                 draw_ui.rectangle([dx, dy, dx + dw, dy + dh], outline=fill_color, width=LINE_WIDTH)
                 t_bbox = draw_ui.textbbox((dx, dy), label, font=font_main)
                 tw, th = t_bbox[2] - t_bbox[0], t_bbox[3] - t_bbox[1]
-                
-                # Dynamic contrast logic
+
                 lum = (rgb_tuple[0]*0.299 + rgb_tuple[1]*0.587 + rgb_tuple[2]*0.114)/255
                 txt_color = (0, 0, 0, 255) if lum > 0.5 else WHITE
-                
+
                 draw_ui.rectangle([dx, dy - th - (PAD*2), dx + tw + (PAD*2), dy], fill=fill_color)
                 draw_ui.text((dx + PAD, dy - th - PAD), label, font=font_main, fill=txt_color)
+
+    # --- 2b. Line fits — always drawn regardless of disc_bool ---
+    if line_params:
+        n = max(1, len(line_params))
+        for i, lp in enumerate(line_params):
+            centroid = lp.get('centroid')
+            direction = lp.get('direction')
+            if centroid is None:
+                continue
+            hue = int(360 * i / n)
+            rgb_tuple = ImageColor.getrgb(f"hsl({hue}, 75%, 50%)")
+            line_color = rgb_tuple + (255,) if has_discontinuity else BRAND_BLUE
+            cy, cx = centroid
+            if direction is not None:
+                dy_dir, dx_dir = direction
+                t = float(max(base_img.width, base_img.height))
+                lx1, ly1 = int(cx - t * dx_dir), int(cy - t * dy_dir)
+                lx2, ly2 = int(cx + t * dx_dir), int(cy + t * dy_dir)
+                draw_ui.line([(lx1, ly1), (lx2, ly2)], fill=line_color, width=THICK_LINE)
+            r = max(4, THICK_LINE * 2)
+            draw_ui.ellipse([(int(cx) - r, int(cy) - r), (int(cx) + r, int(cy) + r)],
+                            fill=line_color, outline=(255, 255, 255, 220), width=max(1, LINE_WIDTH // 2))
 
     # --- 3. Cracks ---
     if crack_masks:

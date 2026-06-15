@@ -37,7 +37,7 @@ def discontinuity_check(image_path: str,
     _img_name = Path(image_path).name
     # YOLO handles RGB numpy arrays correctly
     with timing.track(_img_name, "discontinuity_check", "yolo_stage1"):
-        results = model.predict(image_bgr, conf=0.01, classes=3, agnostic_nms=True, verbose=False, save=False)
+        results = model.predict(image_bgr, conf=0.1, classes=3, agnostic_nms=True, verbose=False, save=False)
 
     if results[0].masks is None or len(results[0].masks.data) == 0:
         print("No detections in Stage 1.")
@@ -115,6 +115,53 @@ def discontinuity_check(image_path: str,
         mask_resized = cv2.resize(mask_np, (orig_w, orig_h), interpolation=cv2.INTER_NEAREST)
         raw_masks.append((mask_resized >= 0.5).astype(np.uint8))
 
+    def compute_line_params_internal(masks):
+        params = []
+        for mask in masks:
+            skeleton = skeletonize(mask.astype(bool))
+            coords = np.argwhere(skeleton).astype(float)
+            if len(coords) >= gap * 2:
+                centroid = coords.mean(axis=0)
+                _, _, vt = np.linalg.svd(coords - centroid, full_matrices=False)
+                direction = vt[0]
+                angle = np.arctan2(direction[0], direction[1])
+                if angle < 0:
+                    angle += np.pi
+                params.append({'angle': angle, 'centroid': centroid, 'direction': direction})
+            else:
+                params.append({'angle': None, 'centroid': None, 'direction': None})
+        return params
+
+    def check_alignment_internal(line_params, label=""):
+        found = False
+        img_diag = np.hypot(orig_h, orig_w)
+        for i in range(len(line_params)):
+            for j in range(i + 1, len(line_params)):
+                lp_i, lp_j = line_params[i], line_params[j]
+                if lp_i['angle'] is None or lp_j['angle'] is None:
+                    print(f"{label}Mask {i} vs Mask {j} | Similarity: N/A (Insufficient data)")
+                    continue
+                angle_diff = min(abs(lp_i['angle'] - lp_j['angle']),
+                                 np.pi - abs(lp_i['angle'] - lp_j['angle']))
+                angle_sim = 1.0 - (2 * angle_diff / np.pi)
+                diff = lp_j['centroid'] - lp_i['centroid']
+                perp_dist = abs(float(np.cross(lp_i['direction'], diff)))
+                pos_sim = max(0.0, 1.0 - (perp_dist / (img_diag * 0.15)))
+                similarity = 0.6 * angle_sim + 0.6 * pos_sim
+                print(f"{label}Mask {i} vs Mask {j} | angle_sim={angle_sim:.3f}  pos_sim={pos_sim:.3f}  combined={similarity:.4f}")
+                if similarity >= threshold:
+                    found = True
+        return found
+
+    # Early alignment check on raw Stage 1 masks — before any filtering.
+    # If YOLO already splits the broken weld into 2+ separate detections, catch it here.
+    found_discontinuity_early = False
+    if len(raw_masks) >= 2:
+        print("\n--- Stage 1 Raw Mask Alignment Check (pre-filter) ---")
+        found_discontinuity_early = check_alignment_internal(
+            compute_line_params_internal(raw_masks), label="[S1] "
+        )
+
     all_masks = []
     all_unfiltered_full = [] # New list to store full-sized unfiltered masks
 
@@ -132,7 +179,7 @@ def discontinuity_check(image_path: str,
         if crop_results[0].masks is not None:
             # 1. Get refined and unfiltered segments from the crop
             refined, unfiltered = refine_mask_internal(crop_image_bgr, crop_results[0].masks.data, min_area_ratio)
-            
+
             # 2. Resize and place UNFILTERED masks
             for m_unf in unfiltered:
                 m_unf_fixed = cv2.resize(m_unf, (crop_w, crop_h), interpolation=cv2.INTER_NEAREST)
@@ -147,6 +194,15 @@ def discontinuity_check(image_path: str,
                 full_mask[y1:y2, x1:x2] = m_fixed
                 all_masks.append(full_mask)
 
+            # If every refined segment was filtered out by min_area_ratio, fall back to the
+            # Stage 1 raw mask so this detection still participates in alignment comparison.
+            if not refined:
+                all_masks.append(mask_binary)
+        else:
+            # Stage 2 detected nothing — fall back to the Stage 1 raw mask so this detection
+            # is not silently dropped from the alignment comparison.
+            all_masks.append(mask_binary)
+
     # Replace the local unfiltered_masks with our full-sized collection for visualization
     unfiltered_masks = all_unfiltered_full 
     all_masks = deduplicate_internal(all_masks)
@@ -154,50 +210,12 @@ def discontinuity_check(image_path: str,
     # =============================
     # 3. LINEAR FUNCTION ANALYSIS
     # =============================
-    line_params = []
-    for i, mask in enumerate(all_masks):
-        skeleton = skeletonize(mask.astype(bool))
-        coords = np.argwhere(skeleton).astype(float)  # (N, 2) as (y, x)
-        if len(coords) >= gap * 2:
-            centroid = coords.mean(axis=0)
-            _, _, vt = np.linalg.svd(coords - centroid, full_matrices=False)
-            direction = vt[0]  # principal axis (dy, dx), already unit length
-            angle = np.arctan2(direction[0], direction[1])
-            if angle < 0:
-                angle += np.pi  # normalize to [0, pi)
-            line_params.append({'angle': angle, 'centroid': centroid, 'direction': direction, 'index': i})
-        else:
-            line_params.append({'angle': None, 'centroid': None, 'direction': None, 'index': i})
+    line_params = compute_line_params_internal(all_masks)
 
-    found_discontinuity = False
-    # if len(line_params) < 2:
-    #     return False, [], []
-    
-    print("\n--- Linear Function Similarity Comparisons (Angle + Perpendicular Distance) ---")
-    for i in range(len(line_params)):
-        for j in range(i + 1, len(line_params)):
-            lp_i, lp_j = line_params[i], line_params[j]
+    found_discontinuity = found_discontinuity_early
 
-            if lp_i['angle'] is not None and lp_j['angle'] is not None:
-                # Angular similarity: 1=parallel, 0=perpendicular (handles vertical correctly)
-                angle_diff = abs(lp_i['angle'] - lp_j['angle'])
-                angle_diff = min(angle_diff, np.pi - angle_diff)  # fold to [0, pi/2]
-                angle_sim = 1.0 - (2 * angle_diff / np.pi)
-
-                # Perpendicular distance from centroid_j to line_i
-                diff = lp_j['centroid'] - lp_i['centroid']
-                perp_dist = abs(float(np.cross(lp_i['direction'], diff)))
-                img_diag = np.hypot(orig_h, orig_w)
-                pos_sim = max(0.0, 1.0 - (perp_dist / (img_diag * 0.15)))
-
-                similarity = 0.6 * angle_sim + 0.6 * pos_sim
-
-                print(f"Mask {i} vs Mask {j} | angle_sim={angle_sim:.3f}  pos_sim={pos_sim:.3f}  combined={similarity:.4f}")
-
-                if similarity >= threshold:
-                    found_discontinuity = True
-            else:
-                print(f"Mask {i} vs Mask {j} | Similarity: N/A (Insufficient data)")
+    print("\n--- Refined Mask Alignment Check (Angle + Perpendicular Distance) ---")
+    found_discontinuity = found_discontinuity or check_alignment_internal(line_params)
 
     # =============================
     # 4. VISUALIZATION
