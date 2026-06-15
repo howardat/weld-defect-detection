@@ -10,6 +10,10 @@ from ultralytics import YOLO
 import subprocess
 import sys
 
+from weld_pipeline.main import (DISC_THRESHOLD, OTSU_MULTIPLIER, PX_TO_MM, THROAT_THICKNESS,
+                                MARKER_SIZE_MM, MIN_PORE_SIZE_MM, PORE_OTSU_MULT,
+                                PORE_CLUSTER_DIST_MM, USE_VLM)
+
 
 def pick_folder(initial_dir: str) -> str:
     script = (
@@ -34,10 +38,21 @@ def load_seg_model():
     return YOLO(MODEL_PATH)
 
 
+def _ollama_available() -> bool:
+    try:
+        import importlib
+        importlib.import_module("ollama")
+        return True
+    except ImportError:
+        return False
+
+_VLM_AVAILABLE = _ollama_available()
+
 @st.cache_resource
 def load_auditor():
     from weld_pipeline.vlm import WeldAuditor
     return WeldAuditor()
+
 
 
 # --- Sidebar ---
@@ -58,8 +73,11 @@ with st.sidebar:
                 st.session_state.image_folder = chosen
                 st.rerun()
     image_folder = st.session_state.image_folder
-    plate_thickness = st.number_input("Plate thickness (mm)", value=10.0, min_value=0.1, step=0.5)
-    use_vlm = st.toggle("Enable VLM analysis", value=False)
+    throat_thickness = st.number_input("Throat thickness (mm)", value=float(THROAT_THICKNESS), min_value=0.1, step=0.5)
+    use_intensity_filter = st.toggle("Porosity intensity filter", value=True)
+    use_vlm = st.toggle("Enable VLM analysis", value=USE_VLM and _VLM_AVAILABLE, disabled=not _VLM_AVAILABLE)
+    if not _VLM_AVAILABLE:
+        st.caption("ollama not installed — VLM unavailable")
     run_btn = st.button("Run Analysis", type="primary", use_container_width=True)
 
 # --- Analysis ---
@@ -86,6 +104,7 @@ if run_btn:
     seg_model = load_seg_model()
     auditor = load_auditor() if use_vlm else None
 
+
     json_dir = PROJECT_ROOT / "data" / "json_output"
     json_dir.mkdir(parents=True, exist_ok=True)
 
@@ -97,16 +116,22 @@ if run_btn:
             disc_bool, refined_masks, line_params = discontinuity_check(
                 image_path=str(image_path),
                 model_path=str(MODEL_PATH),
-                threshold=0.9,
+                threshold=DISC_THRESHOLD,
+                otsu_multiplier=OTSU_MULTIPLIER,
                 visualize=False,
                 seg_model=seg_model,
             )
 
-            clean_json_list, raw_pore_data = porosity_check(
+            clean_json_list, raw_pore_data, _ = porosity_check(
                 image_path=str(image_path),
                 model_path=str(MODEL_PATH),
-                px_to_mm=0.105,
-                plate_thickness_s=plate_thickness,
+                px_to_mm=PX_TO_MM,
+                throat_thickness=throat_thickness,
+                marker_size_mm=MARKER_SIZE_MM,
+                otsu_multiplier=PORE_OTSU_MULT,
+                min_pore_size_mm=MIN_PORE_SIZE_MM,
+                pore_cluster_distance_mm=PORE_CLUSTER_DIST_MM,
+                use_intensity_filter=use_intensity_filter,
                 visualize=False,
                 seg_model=seg_model,
             )
@@ -155,11 +180,9 @@ if run_btn:
                 st.markdown("**Detection summary**")
                 disc_label = ":red[FAIL]" if disc_bool else ":green[PASS]"
                 st.markdown(f"- Discontinuity: {disc_label}")
-                st.markdown(f"- Cracks detected: `{len(all_crack_detections)}`")
-                st.markdown(f"- Pores detected: `{len(clean_json_list)}`")
-                if clean_json_list:
-                    grades = ", ".join(str(p.get("grade", "?")) for p in clean_json_list)
-                    st.markdown(f"- Pore grades: `{grades}`")
+                st.markdown(f"- Cracks: `{len(all_crack_detections)}`")
+                pore_str = ", ".join(f"{p.get('grade','?')} {p.get('size','?')}mm" for p in clean_json_list)
+                st.markdown(f"- Pores `{len(clean_json_list)}`" + (f": `{pore_str}`" if pore_str else ""))
                 if line_params:
                     angles_deg = [
                         f"{np.degrees(lp['angle']):.1f}°"
@@ -169,9 +192,7 @@ if run_btn:
                         st.markdown(f"- Segment angles: `{', '.join(angles_deg)}`")
 
             with vlm_col:
-                if use_vlm and report_v is not None:
-                    st.markdown("**Visual report**")
-                    st.text(report_v)
+                if use_vlm and report_g is not None:
                     st.markdown("**Grounded report**")
                     st.text(report_g)
                 else:
