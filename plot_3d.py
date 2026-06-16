@@ -9,6 +9,7 @@ from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 — registers the 3D projection
+from scipy.interpolate import RectBivariateSpline
 
 # ─── Editable constants ────────────────────────────────────────────────────────
 INPUT_JSON  = Path("./sweep_results.json")
@@ -37,11 +38,19 @@ def main() -> None:
     }
 
     # Construct the grid — shape (len(thresh_vals), len(otsu_vals))
-    X, Y = np.meshgrid(otsu_vals, thresh_vals)
+    otsu_arr   = np.array(otsu_vals)
+    thresh_arr = np.array(thresh_vals)
     Z = np.array([
         [acc_lookup.get((ox, ty), float("nan")) for ox in otsu_vals]
         for ty in thresh_vals
     ])
+
+    # Upsample to a denser grid for a smooth surface
+    spline   = RectBivariateSpline(thresh_arr, otsu_arr, Z)
+    otsu_fine   = np.linspace(otsu_arr.min(),   otsu_arr.max(),   200)
+    thresh_fine = np.linspace(thresh_arr.min(), thresh_arr.max(), 200)
+    X, Y = np.meshgrid(otsu_fine, thresh_fine)
+    Z = spline(thresh_fine, otsu_fine)
 
     fig = plt.figure(figsize=(10, 7))
     ax = fig.add_subplot(111, projection="3d")

@@ -10,7 +10,7 @@ import numpy as np
 from ultralytics import YOLO
 
 # ─── Editable constants ────────────────────────────────────────────────────────
-IMAGE_DIR   = Path("./data/tmp")
+IMAGE_DIR   = Path("./data/discontinuity")
 MODEL_PATH  = Path("./models/wda11s-seg.pt")
 OUTPUT_JSON = Path("./sweep_results.json")
 

@@ -74,6 +74,8 @@ with st.sidebar:
                 st.rerun()
     image_folder = st.session_state.image_folder
     throat_thickness = st.number_input("Throat thickness (mm)", value=float(THROAT_THICKNESS), min_value=0.1, step=0.5)
+    otsu_multiplier = st.slider("Otsu multiplier", min_value=0.5, max_value=1.0, value=float(OTSU_MULTIPLIER), step=0.05)
+    similarity_threshold = st.slider("Similarity threshold", min_value=0.5, max_value=1.0, value=float(DISC_THRESHOLD), step=0.05)
     use_intensity_filter = st.toggle("Porosity intensity filter", value=True)
     use_vlm = st.toggle("Enable VLM analysis", value=USE_VLM and _VLM_AVAILABLE, disabled=not _VLM_AVAILABLE)
     if not _VLM_AVAILABLE:
@@ -116,8 +118,8 @@ if run_btn:
             disc_bool, refined_masks, line_params = discontinuity_check(
                 image_path=str(image_path),
                 model_path=str(MODEL_PATH),
-                threshold=DISC_THRESHOLD,
-                otsu_multiplier=OTSU_MULTIPLIER,
+                threshold=similarity_threshold,
+                otsu_multiplier=otsu_multiplier,
                 visualize=False,
                 seg_model=seg_model,
             )
