@@ -147,7 +147,7 @@ def discontinuity_check(image_path: str,
                 diff = lp_j['centroid'] - lp_i['centroid']
                 perp_dist = abs(float(np.cross(lp_i['direction'], diff)))
                 pos_sim = max(0.0, 1.0 - (perp_dist / (img_diag * 0.15)))
-                similarity = 0.6 * angle_sim + 0.6 * pos_sim
+                similarity = (angle_sim + pos_sim) / 2
                 print(f"{label}Mask {i} vs Mask {j} | angle_sim={angle_sim:.3f}  pos_sim={pos_sim:.3f}  combined={similarity:.4f}")
                 if similarity >= threshold:
                     found = True

@@ -7,6 +7,8 @@ help:
 	@echo "  make test-porosity    - Interactive porosity test (optional: IMG=path/to/img.jpg)"
 	@echo "  make sweep            - Run discontinuity parameter sweep → sweep_results.json"
 	@echo "  make plot-sweep       - Plot sweep results → accuracy_surface.png"
+	@echo "  make predict          - Run inference once → predictions_discontinuity.json"
+	@echo "  make confusion-matrix - Plot confusion matrix from predictions"
 	@echo "  make install          - Install dependencies with Poetry"
 
 run:
@@ -23,6 +25,12 @@ sweep:
 
 plot-sweep:
 	poetry run python plot_3d.py
+
+predict:
+	poetry run python predict_discontinuity.py
+
+confusion-matrix:
+	poetry run python confusion_matrix_discontinuity.py
 
 install:
 	poetry install

@@ -1,0 +1,217 @@
+{
+  "otsu_multiplier": 0.6,
+  "disc_threshold": 1.0,
+  "image_dir": "data\\discontinuity",
+  "predictions": [
+    {
+      "image": "clean.jpg",
+      "gt": false,
+      "pred": false
+    },
+    {
+      "image": "clean10.jpg",
+      "gt": false,
+      "pred": false
+    },
+    {
+      "image": "clean11.jpg",
+      "gt": false,
+      "pred": false
+    },
+    {
+      "image": "clean12.jpg",
+      "gt": false,
+      "pred": false
+    },
+    {
+      "image": "clean13.jpg",
+      "gt": false,
+      "pred": false
+    },
+    {
+      "image": "clean14.jpg",
+      "gt": false,
+      "pred": false
+    },
+    {
+      "image": "clean15.jpg",
+      "gt": false,
+      "pred": false
+    },
+    {
+      "image": "clean17.jpg",
+      "gt": false,
+      "pred": false
+    },
+    {
+      "image": "clean2.jpg",
+      "gt": false,
+      "pred": false
+    },
+    {
+      "image": "clean3.jpg",
+      "gt": false,
+      "pred": false
+    },
+    {
+      "image": "clean4.jpg",
+      "gt": false,
+      "pred": false
+    },
+    {
+      "image": "clean5.jpg",
+      "gt": false,
+      "pred": false
+    },
+    {
+      "image": "clean6.jpg",
+      "gt": false,
+      "pred": false
+    },
+    {
+      "image": "clean7.jpg",
+      "gt": false,
+      "pred": false
+    },
+    {
+      "image": "clean8.jpg",
+      "gt": false,
+      "pred": false
+    },
+    {
+      "image": "clean9.jpg",
+      "gt": false,
+      "pred": false
+    },
+    {
+      "image": "discontinuity.jpg",
+      "gt": true,
+      "pred": true
+    },
+    {
+      "image": "discontinuity001.jpg",
+      "gt": true,
+      "pred": true
+    },
+    {
+      "image": "discontinuity002.jpg",
+      "gt": true,
+      "pred": true
+    },
+    {
+      "image": "discontinuity003.jpg",
+      "gt": true,
+      "pred": true
+    },
+    {
+      "image": "discontinuity004.jpg",
+      "gt": true,
+      "pred": false
+    },
+    {
+      "image": "discontinuity005.jpg",
+      "gt": true,
+      "pred": false
+    },
+    {
+      "image": "discontinuity006.jpg",
+      "gt": true,
+      "pred": true
+    },
+    {
+      "image": "discontinuity007.jpg",
+      "gt": true,
+      "pred": true
+    },
+    {
+      "image": "discontinuity008.jpg",
+      "gt": true,
+      "pred": true
+    },
+    {
+      "image": "discontinuity009.jpg",
+      "gt": true,
+      "pred": true
+    },
+    {
+      "image": "discontinuity01.jpg",
+      "gt": true,
+      "pred": true
+    },
+    {
+      "image": "discontinuity02.jpg",
+      "gt": true,
+      "pred": false
+    },
+    {
+      "image": "discontinuity03.jpg",
+      "gt": true,
+      "pred": true
+    },
+    {
+      "image": "discontinuity05.jpg",
+      "gt": true,
+      "pred": true
+    },
+    {
+      "image": "discontinuity06.jpg",
+      "gt": true,
+      "pred": false
+    },
+    {
+      "image": "discontinuity07.jpg",
+      "gt": true,
+      "pred": true
+    },
+    {
+      "image": "discontinuity08.jpg",
+      "gt": true,
+      "pred": true
+    },
+    {
+      "image": "discontinuity09.jpeg",
+      "gt": true,
+      "pred": true
+    },
+    {
+      "image": "discontinuity09.jpg",
+      "gt": true,
+      "pred": false
+    },
+    {
+      "image": "discontinuity16.jpg",
+      "gt": true,
+      "pred": true
+    },
+    {
+      "image": "discontinuity17.jpg",
+      "gt": true,
+      "pred": true
+    },
+    {
+      "image": "discontinuity18.jpg",
+      "gt": true,
+      "pred": false
+    },
+    {
+      "image": "discontinuity19.jpg",
+      "gt": true,
+      "pred": false
+    },
+    {
+      "image": "discontinuity20.jpg",
+      "gt": true,
+      "pred": true
+    },
+    {
+      "image": "discontinuity21.jpg",
+      "gt": true,
+      "pred": true
+    },
+    {
+      "image": "discontinuity23.jpg",
+      "gt": true,
+      "pred": true
+    }
+  ]
+}

@@ -16,11 +16,11 @@ OUTPUT_JSON = Path("./sweep_results.json")
 
 OTSU_MIN  = 0.5
 OTSU_MAX  = 1.0
-OTSU_STEP = 0.1
+OTSU_STEP = 0.05
 
 THRESH_MIN  = 0.5
 THRESH_MAX  = 1.0
-THRESH_STEP = 0.1
+THRESH_STEP = 0.05
 # ──────────────────────────────────────────────────────────────────────────────
 
 # Add the project src to the path so the package resolves without installing

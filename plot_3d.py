@@ -55,11 +55,12 @@ def main() -> None:
     fig = plt.figure(figsize=(10, 7))
     ax = fig.add_subplot(111, projection="3d")
 
+    ax.view_init(elev=30, azim=45)
     surf = ax.plot_surface(X, Y, Z, cmap="viridis", edgecolor="none", alpha=0.9)
     fig.colorbar(surf, ax=ax, shrink=0.5, aspect=10, label="Accuracy")
 
     ax.set_xlabel("otsu_multiplier")
-    ax.set_ylabel("discontinuity_threshold")
+    ax.set_ylabel("similarity")
     ax.set_zlabel("Accuracy")
     ax.set_title("Discontinuity Detection Accuracy\nvs. otsu_multiplier × threshold")
 

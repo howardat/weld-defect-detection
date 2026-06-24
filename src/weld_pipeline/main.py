@@ -104,8 +104,8 @@ def process_single_image(image_path, model_path, json_dir, report_dir, seg_model
     return disc_bool
 
 # --- Shared settings (also imported by streamlit_app.py) ---
-DISC_THRESHOLD       = 0.9    # Similarity threshold for discontinuity detection (>1 disables it)
-OTSU_MULTIPLIER      = 0.75   # Otsu multiplier for discontinuity check
+DISC_THRESHOLD       = 0.85    # Similarity threshold for discontinuity detection (>1 disables it)
+OTSU_MULTIPLIER      = 0.6   # Otsu multiplier for discontinuity check
 PX_TO_MM             = 0.105
 THROAT_THICKNESS      = 10.0
 MARKER_SIZE_MM       = 10.0   # Physical ArUco marker size in mm
