@@ -210,7 +210,7 @@ def porosity_check(image_path: str,
                     elif d_mm <= lim_D:
                         label, grade_color = "D", (255, 165, 0)
                     else:
-                        label, grade_color = "F", (255, 0, 0)
+                        label, grade_color = "Reject", (255, 0, 0)
 
                     cnt_mapped = cnt.copy()
                     cnt_mapped[:, :, 0] += x1_c
