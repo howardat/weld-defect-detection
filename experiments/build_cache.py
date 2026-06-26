@@ -8,7 +8,7 @@ import numpy as np
 
 from weld_pipeline.porosity_data import load_dataset
 from weld_pipeline.porosity_features import FEATURE_NAMES, extract_features
-from weld_pipeline.porosity_predictor import PARAM_ORDER, params_to_vector
+from weld_pipeline.porosity_predictor import PARAM_ORDER
 from weld_pipeline.porosity_tuner import optimize_image
 
 ROOT = Path(__file__).resolve().parent.parent
