@@ -22,6 +22,8 @@ dependencies = [
     "bitsandbytes>=0.43.0",
     "pillow>=10.4.0",
     "opencv-python>=4.10.0",
+    "optuna>=3.6.0",
+    "scikit-learn>=1.4.0",
     "torchaudio (==2.10.0+cu126)"
 ]
 
@@ -38,6 +40,14 @@ priority = "supplemental"
 torch = {source = "pytorch-gpu"}
 torchvision = {source = "pytorch-gpu"}
 torchaudio = {source = "pytorch-gpu"}
+
+[tool.pytest.ini_options]
+testpaths = ["tests/porosity"]
+addopts = "-q"
+
+[tool.poetry.group.dev.dependencies]
+pytest = ">=8.0.0"
+
 [build-system]
 requires = ["poetry-core>=2.0.0"]
 build-backend = "poetry.core.masonry.api"
