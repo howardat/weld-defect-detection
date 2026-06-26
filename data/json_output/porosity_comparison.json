@@ -5,14 +5,14 @@
   },
   {
     "method": "Per-image Optuna Ceiling (GT, non-deployable)",
-    "mean_f1": 0.3456967235543467
+    "mean_f1": 0.6767226220329641
   },
   {
     "method": "Experiment A (predictor, LOOCV)",
-    "mean_f1": 0.2537768634504373
+    "mean_f1": 0.46459124464183293
   },
   {
     "method": "Experiment C (warm-start + proxy, LOOCV)",
-    "mean_f1": 0.10424731231445246
+    "mean_f1": 0.1413946970904983
   }
 ]
