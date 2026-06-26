@@ -147,3 +147,35 @@ def proxy_score(detections: list[PoreDetection]) -> float:
         for d in detections
     ]
     return float(np.mean(scores))
+
+
+def postprocess_weld_mask(mask: np.ndarray) -> np.ndarray:
+    cnts, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if not cnts:
+        return mask
+    weld_area = sum(cv2.contourArea(c) for c in cnts)
+    r = int(np.sqrt(0.005 * weld_area / np.pi)) if weld_area > 0 else 0
+    ksize = 2 * r + 1
+    if ksize > 1:
+        k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (ksize, ksize))
+        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, k, iterations=1)
+        cnts, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    filled = np.zeros_like(mask)
+    cv2.drawContours(filled, cnts, -1, 255, cv2.FILLED)
+    return filled
+
+
+def build_weld_mask(img_rgb: np.ndarray, seg_model, weld_conf: float = 0.01) -> np.ndarray:
+    h, w = img_rgb.shape[:2]
+    mask = np.zeros((h, w), np.uint8)
+    results = seg_model.predict(img_rgb, conf=weld_conf, classes=[3], verbose=False)
+    r = results[0]
+    if getattr(r, "masks", None) is not None:
+        for mt in r.masks.data:
+            m = cv2.resize(mt.cpu().numpy(), (w, h), interpolation=cv2.INTER_NEAREST)
+            mask = cv2.bitwise_or(mask, (m > 0.5).astype(np.uint8) * 255)
+    elif getattr(r, "boxes", None) is not None:
+        for box in r.boxes:
+            x1, y1, x2, y2 = map(int, box.xyxy[0].cpu().numpy())
+            cv2.rectangle(mask, (x1, y1), (x2, y2), 255, cv2.FILLED)
+    return postprocess_weld_mask(mask)
