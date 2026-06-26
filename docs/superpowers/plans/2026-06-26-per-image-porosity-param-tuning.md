@@ -12,7 +12,7 @@
 
 - Python `>=3.11,<3.13` (from `pyproject.toml`).
 - The filtering pipeline is fixed and shared (spec "The Filtering Pipeline"): YOLO weld mask → **erode by `erode_iters`** → adaptive Gaussian threshold (`block_size`,`adapt_c`,`THRESH_BINARY_INV`) → fixed close (3×3 ellipse, 2 iters) → open (`open_ksize`) → **AND with eroded weld mask** → contours → **circularity filter** (2nd-to-last) → **darkness filter** (last). No min-area, no aspect-ratio, no min-diameter-fraction filters.
-- Exactly 6 tunable params with these bounds: `block_size` odd 11–201; `adapt_c` int 1–350; `open_ksize` odd 1–21; `erode_iters` int 0–30; `min_circularity` float 0.05–0.95; `darkness_thresh` int 0–60 (absolute ring-vs-interior intensity gap).
+- Exactly 6 tunable params with these bounds: `block_size` odd 11–201; `adapt_c` int 1–350; `open_ksize` odd 1–21; `erode_iters` int 0–30; `min_circularity` float 0.05–0.95; `darkness_thresh` int 0–120 (absolute ring-vs-interior intensity gap).
 - `darkness_thresh` is an absolute gap, NOT the old `0.4×std` heuristic.
 - All A/C reported numbers use LOOCV (train on 17, test on the held-out 1). The per-image Optuna ceiling uses GT and is reported only as a non-deployable upper bound.
 - Dataset: `data/porosity_val/` (18 images) + `data/porosity_val/_annotations.coco.json` (COCO polygons, category porosity). GT mask = filled segmentation polygons.
@@ -148,7 +148,7 @@ def test_sanitize_clips_out_of_range():
     assert p.open_ksize == 21
     assert p.erode_iters == 30
     assert p.min_circularity == 0.95
-    assert p.darkness_thresh == 60
+    assert p.darkness_thresh == 120
 
 
 def test_sanitize_coerces_integer_fields():
@@ -185,7 +185,7 @@ PARAM_BOUNDS: dict[str, tuple[float, float]] = {
     "open_ksize": (1, 21),
     "erode_iters": (0, 30),
     "min_circularity": (0.05, 0.95),
-    "darkness_thresh": (0, 60),
+    "darkness_thresh": (0, 120),
 }
 
 
@@ -402,11 +402,16 @@ def test_high_circularity_threshold_keeps_round_pores():
     assert len(dets) >= 1
 
 
-def test_high_darkness_threshold_rejects_all():
-    gray = _synthetic_pore_image()
-    strict = PoreParams(51, 10, 3, 0, 0.5, 250)
-    dets = detect_pores(gray, _full_weld_mask(), strict)
-    assert len(dets) == 0
+def test_darkness_threshold_rejects_faint_pore():
+    # Faint pore: interior 150 on a 200 background → contrast gap ~50.
+    size = 200
+    gray = np.full((size, size), 200, np.uint8)
+    cv2.circle(gray, (100, 100), 14, 150, -1)
+    weld = np.full((size, size), 255, np.uint8)
+    lenient = PoreParams(51, 10, 3, 0, 0.5, 20)    # gap>=20 keeps it
+    strict = PoreParams(51, 10, 3, 0, 0.5, 120)    # gap>=120 (in-bounds) rejects it
+    assert len(detect_pores(gray, weld, lenient)) >= 1
+    assert len(detect_pores(gray, weld, strict)) == 0
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -1044,7 +1049,7 @@ def suggest_params(trial) -> PoreParams:
         open_ksize=trial.suggest_int("open_ksize", 1, 21, step=2),
         erode_iters=trial.suggest_int("erode_iters", 0, 30),
         min_circularity=trial.suggest_float("min_circularity", 0.05, 0.95),
-        darkness_thresh=trial.suggest_int("darkness_thresh", 0, 60),
+        darkness_thresh=trial.suggest_int("darkness_thresh", 0, 120),
     ))
 
 
@@ -1161,7 +1166,7 @@ def test_train_and_predict_returns_pore_params():
         rng.integers(1, 21, 12),     # open_ksize
         rng.integers(0, 30, 12),     # erode_iters
         rng.uniform(0.05, 0.95, 12), # min_circularity
-        rng.integers(0, 60, 12),     # darkness_thresh
+        rng.integers(0, 120, 12),    # darkness_thresh
     ]).astype(np.float32)
     models = train_predictor(X, Y, seed=0)
     assert len(models) == 6

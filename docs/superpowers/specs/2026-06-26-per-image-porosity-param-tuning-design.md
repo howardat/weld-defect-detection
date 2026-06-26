@@ -60,7 +60,7 @@ Surviving contours = detected pores. Their filled mask is compared to GT for pix
 | `open_ksize` | odd int 1–21 | morphological opening kernel |
 | `erode_iters` | int 0–30 | weld-mask inward erosion |
 | `min_circularity` | float 0.05–0.95 | circularity filter threshold |
-| `darkness_thresh` | int 0–60 | absolute ring-vs-interior intensity gap |
+| `darkness_thresh` | int 0–120 | absolute ring-vs-interior intensity gap |
 
 `darkness_thresh` is an **absolute** intensity gap, replacing the old `0.4 × std(weld region)` heuristic, which did not work well. Because the regressor's input features include weld-region std/contrast, it can still learn the per-image relationship and generalize.
 
