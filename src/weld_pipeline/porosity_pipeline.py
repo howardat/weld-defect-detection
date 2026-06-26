@@ -13,7 +13,7 @@ PARAM_BOUNDS: dict[str, tuple[float, float]] = {
     "open_ksize": (1, 21),
     "erode_iters": (0, 30),
     "min_circularity": (0.05, 0.95),
-    "darkness_thresh": (0, 255),
+    "darkness_thresh": (0, 120),
 }
 
 

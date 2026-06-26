@@ -26,7 +26,7 @@ def test_sanitize_clips_out_of_range():
     assert p.open_ksize == 21
     assert p.erode_iters == 30
     assert p.min_circularity == 0.95
-    assert p.darkness_thresh == 60
+    assert p.darkness_thresh == 120
 
 
 def test_sanitize_coerces_integer_fields():

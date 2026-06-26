@@ -58,8 +58,13 @@ def test_high_circularity_threshold_keeps_round_pores():
     assert len(dets) >= 1
 
 
-def test_high_darkness_threshold_rejects_all():
-    gray = _synthetic_pore_image()
-    strict = PoreParams(51, 10, 3, 0, 0.5, 250)
-    dets = detect_pores(gray, _full_weld_mask(), strict)
-    assert len(dets) == 0
+def test_darkness_threshold_rejects_faint_pore():
+    # Faint pore: interior 150 on a 200 background -> contrast gap ~50.
+    size = 200
+    gray = np.full((size, size), 200, np.uint8)
+    cv2.circle(gray, (100, 100), 14, 150, -1)
+    weld = np.full((size, size), 255, np.uint8)
+    lenient = PoreParams(51, 10, 3, 0, 0.5, 20)    # gap>=20 keeps it
+    strict = PoreParams(51, 10, 3, 0, 0.5, 120)    # gap>=120 (in-bounds) rejects it
+    assert len(detect_pores(gray, weld, lenient)) >= 1
+    assert len(detect_pores(gray, weld, strict)) == 0
