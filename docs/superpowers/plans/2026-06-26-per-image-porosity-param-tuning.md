@@ -620,14 +620,20 @@ def test_postprocess_empty_stays_empty():
     assert postprocess_weld_mask(mask).sum() == 0
 
 
+class _FakeTensor:
+    """Mimics an ultralytics tensor: box.xyxy[0].cpu().numpy()."""
+    def __init__(self, arr): self._arr = np.asarray(arr, dtype=np.float32)
+    def cpu(self): return self
+    def numpy(self): return self._arr
+
+
+class _FakeBox:
+    def __init__(self, xyxy): self.xyxy = [_FakeTensor(xyxy)]
+
+
 class _FakeResult:
     masks = None
-    class _Boxes:
-        def __init__(self, xyxy): self._xyxy = xyxy
-        def __iter__(self):
-            for b in self._xyxy:
-                yield type("B", (), {"xyxy": [type("T", (), {"cpu": lambda s: type("N", (), {"numpy": lambda s2: np.array(b)})()})()]})()
-    def __init__(self, boxes): self.boxes = self._Boxes(boxes)
+    def __init__(self, boxes): self.boxes = [_FakeBox(b) for b in boxes]
 
 
 class _FakeModel:
