@@ -1,0 +1,18 @@
+[
+  {
+    "method": "Baseline global sweep",
+    "mean_f1": 0.4
+  },
+  {
+    "method": "Per-image Optuna Ceiling (GT, non-deployable)",
+    "mean_f1": 0.3456967235543467
+  },
+  {
+    "method": "Experiment A (predictor, LOOCV)",
+    "mean_f1": 0.2537768634504373
+  },
+  {
+    "method": "Experiment C (warm-start + proxy, LOOCV)",
+    "mean_f1": 0.10424731231445246
+  }
+]

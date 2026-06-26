@@ -1,0 +1,79 @@
+{
+  "method": "experiment_c_warmstart_proxy_refine_loocv",
+  "mean_f1": 0.10424731231445246,
+  "refine_trials": 8,
+  "per_image": [
+    {
+      "file_name": "laser-welding-aluminum-my-cheat-sheet-for-fixing-the-4-most-v0-342wgmb8pd6g1_webp.rf.01723bd1380d04260a7bba70dfee3410.jpg",
+      "f1": 0.43930635838150295
+    },
+    {
+      "file_name": "Screenshot-2023-02-08-101905_png_jpg.rf.4138aa04670daa16b82f42dc26870f76.jpg",
+      "f1": 0.37246531483457845
+    },
+    {
+      "file_name": "istockphoto-1006281510-170667a_jpg.rf.8a52bf55aef7ef0eec3b538826b53705.jpg",
+      "f1": 0.022475810300689892
+    },
+    {
+      "file_name": "IMG_3627_block_1_1_png_jpg.rf.cb3b9e56697c9b0d678b587a121738b1.jpg",
+      "f1": 0.04063299733639735
+    },
+    {
+      "file_name": "why-am-i-getting-this-porosity-tig-settings-shown-v0-x4ez9uokrgp91_webp.rf.7d96b7cf629c941487d3c41510076515.jpg",
+      "f1": 0.1768778123918311
+    },
+    {
+      "file_name": "welding-defects-porosity_png.rf.f3043d527ebcd34d61c67e0918c9f722.jpg",
+      "f1": 0.015093390352808001
+    },
+    {
+      "file_name": "internal-defect-porosity_600x600_webp.rf.44e0af57fe7e02f86c5f0eb45e8359c9.jpg",
+      "f1": 0.0
+    },
+    {
+      "file_name": "tig-welding-and-getting-this-pores-what-am-i-doing-wrong-v0-w937pb7fvcw71_webp.rf.e25c018bc7a9ae2ee86d410569254368.jpg",
+      "f1": 0.0432805394386075
+    },
+    {
+      "file_name": "fEIFeqT_jpg.rf.84261eb28e951b2e948b328490785657.jpg",
+      "f1": 0.05734952208731594
+    },
+    {
+      "file_name": "tig-troubles-v0-6nhrh7x03vse1_webp.rf.e7dd8e24a56d65532824593ae2ca28f0.jpg",
+      "f1": 0.07486285898676992
+    },
+    {
+      "file_name": "tig-troubles-v0-jcyds5d33vse1_webp.rf.ba48d7d4480262a110abc5859b765f9c.jpg",
+      "f1": 0.017685915192840403
+    },
+    {
+      "file_name": "IMG_3624_block_1_1_png_jpg.rf.5bb665d99a20def4a23bfbe11eeefdbf.jpg",
+      "f1": 0.06343419613561793
+    },
+    {
+      "file_name": "feedback-on-best-weld-in-first-2-months-v0-n4tlotes0wif1_webp.rf.315b146640650f5cbf26c7d9288cd5ad.jpg",
+      "f1": 0.1676056338028169
+    },
+    {
+      "file_name": "IMG_3625_block_1_1_png_jpg.rf.ad9e26317e920c59a46bb9e0cb235f35.jpg",
+      "f1": 0.014265510668388368
+    },
+    {
+      "file_name": "5f5u1di7lowa1_jpg.rf.9148f5e2b7554d3df94ccec8343b9b2a.jpg",
+      "f1": 0.0
+    },
+    {
+      "file_name": "9pddbrr9enw21_jpg.rf.f49f6375b564a79757b3d1f27780cc6c.jpg",
+      "f1": 0.18058115762308546
+    },
+    {
+      "file_name": "yue62rbmwt081_jpg.rf.1ffdb3cad068a1b459877a84a5733a1b.jpg",
+      "f1": 0.15403726708074533
+    },
+    {
+      "file_name": "old-welding-machine-has-suddenly-started-making-a-lot-of-v0-07mwpw637nq71_jpg.rf.42bd07aa6c092c9520cec82f644694c1.jpg",
+      "f1": 0.03649733704614885
+    }
+  ]
+}

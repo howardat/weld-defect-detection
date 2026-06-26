@@ -1,0 +1,474 @@
+{
+  "feature_names": [
+    "mean",
+    "std",
+    "p10",
+    "p50",
+    "p90",
+    "contrast",
+    "lap_var",
+    "weld_area_frac",
+    "weld_aspect",
+    "edge_density"
+  ],
+  "param_order": [
+    "block_size",
+    "adapt_c",
+    "open_ksize",
+    "erode_iters",
+    "min_circularity",
+    "darkness_thresh"
+  ],
+  "items": [
+    {
+      "file_name": "laser-welding-aluminum-my-cheat-sheet-for-fixing-the-4-most-v0-342wgmb8pd6g1_webp.rf.01723bd1380d04260a7bba70dfee3410.jpg",
+      "image_id": 0,
+      "features": [
+        150.2986602783203,
+        42.63576126098633,
+        104.0,
+        143.0,
+        216.0,
+        112.0,
+        445.8491516113281,
+        0.21183332800865173,
+        0.11167512834072113,
+        0.3522469699382782
+      ],
+      "params": {
+        "block_size": 143,
+        "adapt_c": 22,
+        "open_ksize": 15,
+        "erode_iters": 20,
+        "min_circularity": 0.2393443049664568,
+        "darkness_thresh": 15
+      },
+      "ceiling_f1": 0.02471636952998379
+    },
+    {
+      "file_name": "Screenshot-2023-02-08-101905_png_jpg.rf.4138aa04670daa16b82f42dc26870f76.jpg",
+      "image_id": 1,
+      "features": [
+        162.86570739746094,
+        53.926151275634766,
+        84.0,
+        167.0,
+        233.0,
+        149.0,
+        154.7869415283203,
+        0.024577636271715164,
+        0.261904776096344,
+        0.3011820912361145
+      ],
+      "params": {
+        "block_size": 177,
+        "adapt_c": 86,
+        "open_ksize": 13,
+        "erode_iters": 24,
+        "min_circularity": 0.5948955017818587,
+        "darkness_thresh": 68
+      },
+      "ceiling_f1": 0.23188405797101452
+    },
+    {
+      "file_name": "istockphoto-1006281510-170667a_jpg.rf.8a52bf55aef7ef0eec3b538826b53705.jpg",
+      "image_id": 2,
+      "features": [
+        115.15864562988281,
+        43.33684539794922,
+        59.0,
+        116.0,
+        172.0,
+        113.0,
+        790.1824340820312,
+        0.04829101637005806,
+        0.6561797857284546,
+        0.3388776481151581
+      ],
+      "params": {
+        "block_size": 143,
+        "adapt_c": 22,
+        "open_ksize": 15,
+        "erode_iters": 20,
+        "min_circularity": 0.2393443049664568,
+        "darkness_thresh": 15
+      },
+      "ceiling_f1": 0.01185332890218234
+    },
+    {
+      "file_name": "IMG_3627_block_1_1_png_jpg.rf.cb3b9e56697c9b0d678b587a121738b1.jpg",
+      "image_id": 3,
+      "features": [
+        119.12981414794922,
+        49.651180267333984,
+        57.0,
+        116.0,
+        189.0,
+        132.0,
+        1050.708740234375,
+        0.4083569347858429,
+        0.909375011920929,
+        0.3390050530433655
+      ],
+      "params": {
+        "block_size": 143,
+        "adapt_c": 22,
+        "open_ksize": 15,
+        "erode_iters": 20,
+        "min_circularity": 0.2393443049664568,
+        "darkness_thresh": 15
+      },
+      "ceiling_f1": 0.13216217315277948
+    },
+    {
+      "file_name": "why-am-i-getting-this-porosity-tig-settings-shown-v0-x4ez9uokrgp91_webp.rf.7d96b7cf629c941487d3c41510076515.jpg",
+      "image_id": 4,
+      "features": [
+        146.6444549560547,
+        38.263912200927734,
+        86.0,
+        160.0,
+        175.0,
+        89.0,
+        212.4684295654297,
+        0.18319766223430634,
+        0.8459085822105408,
+        0.08715414255857468
+      ],
+      "params": {
+        "block_size": 143,
+        "adapt_c": 22,
+        "open_ksize": 15,
+        "erode_iters": 20,
+        "min_circularity": 0.2393443049664568,
+        "darkness_thresh": 15
+      },
+      "ceiling_f1": 0.2012084592145015
+    },
+    {
+      "file_name": "welding-defects-porosity_png.rf.f3043d527ebcd34d61c67e0918c9f722.jpg",
+      "image_id": 5,
+      "features": [
+        154.6268310546875,
+        46.699344635009766,
+        98.0,
+        148.0,
+        221.0,
+        123.0,
+        137.16690063476562,
+        0.18370182812213898,
+        0.4833984375,
+        0.27065321803092957
+      ],
+      "params": {
+        "block_size": 143,
+        "adapt_c": 22,
+        "open_ksize": 15,
+        "erode_iters": 20,
+        "min_circularity": 0.2393443049664568,
+        "darkness_thresh": 15
+      },
+      "ceiling_f1": 0.22124840764331208
+    },
+    {
+      "file_name": "internal-defect-porosity_600x600_webp.rf.44e0af57fe7e02f86c5f0eb45e8359c9.jpg",
+      "image_id": 6,
+      "features": [
+        124.14583587646484,
+        52.47052001953125,
+        57.0,
+        120.0,
+        198.0,
+        141.0,
+        342.25701904296875,
+        0.21889258921146393,
+        0.7012302279472351,
+        0.32156816124916077
+      ],
+      "params": {
+        "block_size": 179,
+        "adapt_c": 83,
+        "open_ksize": 3,
+        "erode_iters": 4,
+        "min_circularity": 0.15015070205916897,
+        "darkness_thresh": 83
+      },
+      "ceiling_f1": 0.7260435038212816
+    },
+    {
+      "file_name": "tig-welding-and-getting-this-pores-what-am-i-doing-wrong-v0-w937pb7fvcw71_webp.rf.e25c018bc7a9ae2ee86d410569254368.jpg",
+      "image_id": 7,
+      "features": [
+        135.2614288330078,
+        43.32979202270508,
+        76.0,
+        138.0,
+        188.0,
+        112.0,
+        40.32200622558594,
+        0.06713590025901794,
+        0.2222222238779068,
+        0.18914182484149933
+      ],
+      "params": {
+        "block_size": 161,
+        "adapt_c": 1,
+        "open_ksize": 17,
+        "erode_iters": 11,
+        "min_circularity": 0.20829141359563802,
+        "darkness_thresh": 26
+      },
+      "ceiling_f1": 0.5435331230283913
+    },
+    {
+      "file_name": "fEIFeqT_jpg.rf.84261eb28e951b2e948b328490785657.jpg",
+      "image_id": 8,
+      "features": [
+        146.17794799804688,
+        35.19350814819336,
+        110.0,
+        139.0,
+        197.0,
+        87.0,
+        52.820438385009766,
+        0.18166890740394592,
+        0.5968137383460999,
+        0.18890811502933502
+      ],
+      "params": {
+        "block_size": 143,
+        "adapt_c": 22,
+        "open_ksize": 15,
+        "erode_iters": 20,
+        "min_circularity": 0.2393443049664568,
+        "darkness_thresh": 15
+      },
+      "ceiling_f1": 0.10397694524495676
+    },
+    {
+      "file_name": "tig-troubles-v0-6nhrh7x03vse1_webp.rf.e7dd8e24a56d65532824593ae2ca28f0.jpg",
+      "image_id": 9,
+      "features": [
+        174.09628295898438,
+        42.9406623840332,
+        130.0,
+        170.0,
+        241.0,
+        111.0,
+        51.90095901489258,
+        0.0468917191028595,
+        0.2200232893228531,
+        0.2172887623310089
+      ],
+      "params": {
+        "block_size": 181,
+        "adapt_c": 73,
+        "open_ksize": 3,
+        "erode_iters": 5,
+        "min_circularity": 0.28429403132370884,
+        "darkness_thresh": 40
+      },
+      "ceiling_f1": 0.5226155358898722
+    },
+    {
+      "file_name": "tig-troubles-v0-jcyds5d33vse1_webp.rf.ba48d7d4480262a110abc5859b765f9c.jpg",
+      "image_id": 10,
+      "features": [
+        168.21063232421875,
+        42.48345184326172,
+        114.0,
+        169.0,
+        224.0,
+        110.0,
+        83.7997055053711,
+        0.0582677461206913,
+        0.6300851702690125,
+        0.24038270115852356
+      ],
+      "params": {
+        "block_size": 163,
+        "adapt_c": 9,
+        "open_ksize": 17,
+        "erode_iters": 8,
+        "min_circularity": 0.309799073647385,
+        "darkness_thresh": 24
+      },
+      "ceiling_f1": 0.6006103978109871
+    },
+    {
+      "file_name": "IMG_3624_block_1_1_png_jpg.rf.5bb665d99a20def4a23bfbe11eeefdbf.jpg",
+      "image_id": 11,
+      "features": [
+        112.63932037353516,
+        48.167171478271484,
+        54.0,
+        109.0,
+        178.0,
+        124.0,
+        180.39285278320312,
+        0.6000268459320068,
+        0.878125011920929,
+        0.27311602234840393
+      ],
+      "params": {
+        "block_size": 181,
+        "adapt_c": 73,
+        "open_ksize": 3,
+        "erode_iters": 5,
+        "min_circularity": 0.28429403132370884,
+        "darkness_thresh": 40
+      },
+      "ceiling_f1": 0.4938492718103408
+    },
+    {
+      "file_name": "feedback-on-best-weld-in-first-2-months-v0-n4tlotes0wif1_webp.rf.315b146640650f5cbf26c7d9288cd5ad.jpg",
+      "image_id": 12,
+      "features": [
+        154.5233612060547,
+        64.8779525756836,
+        57.0,
+        173.0,
+        230.0,
+        173.0,
+        511.01123046875,
+        0.12245691567659378,
+        0.7172034382820129,
+        0.2995615601539612
+      ],
+      "params": {
+        "block_size": 143,
+        "adapt_c": 22,
+        "open_ksize": 15,
+        "erode_iters": 20,
+        "min_circularity": 0.2393443049664568,
+        "darkness_thresh": 15
+      },
+      "ceiling_f1": 0.10187173979748389
+    },
+    {
+      "file_name": "IMG_3625_block_1_1_png_jpg.rf.ad9e26317e920c59a46bb9e0cb235f35.jpg",
+      "image_id": 13,
+      "features": [
+        110.95022583007812,
+        43.568992614746094,
+        61.0,
+        107.0,
+        168.0,
+        107.0,
+        1060.2530517578125,
+        0.540148913860321,
+        1.0,
+        0.34814345836639404
+      ],
+      "params": {
+        "block_size": 169,
+        "adapt_c": 4,
+        "open_ksize": 17,
+        "erode_iters": 6,
+        "min_circularity": 0.3421949473174518,
+        "darkness_thresh": 13
+      },
+      "ceiling_f1": 0.5218487967823302
+    },
+    {
+      "file_name": "5f5u1di7lowa1_jpg.rf.9148f5e2b7554d3df94ccec8343b9b2a.jpg",
+      "image_id": 14,
+      "features": [
+        34.43633270263672,
+        33.21517562866211,
+        3.0,
+        22.0,
+        81.0,
+        78.0,
+        53.08024978637695,
+        0.0037486155051738024,
+        0.9773463010787964,
+        0.08891611546278
+      ],
+      "params": {
+        "block_size": 115,
+        "adapt_c": 251,
+        "open_ksize": 13,
+        "erode_iters": 16,
+        "min_circularity": 0.4312893194050142,
+        "darkness_thresh": 78
+      },
+      "ceiling_f1": 0.0
+    },
+    {
+      "file_name": "9pddbrr9enw21_jpg.rf.f49f6375b564a79757b3d1f27780cc6c.jpg",
+      "image_id": 15,
+      "features": [
+        111.88847351074219,
+        52.04569625854492,
+        51.0,
+        104.0,
+        183.0,
+        132.0,
+        16.99471092224121,
+        0.10736028105020523,
+        0.893623948097229,
+        0.05207258090376854
+      ],
+      "params": {
+        "block_size": 159,
+        "adapt_c": 19,
+        "open_ksize": 17,
+        "erode_iters": 29,
+        "min_circularity": 0.24951917590551165,
+        "darkness_thresh": 34
+      },
+      "ceiling_f1": 0.8070962479608483
+    },
+    {
+      "file_name": "yue62rbmwt081_jpg.rf.1ffdb3cad068a1b459877a84a5733a1b.jpg",
+      "image_id": 16,
+      "features": [
+        126.98994445800781,
+        46.67988967895508,
+        75.0,
+        118.0,
+        194.0,
+        119.0,
+        115.05931854248047,
+        0.09278229624032974,
+        0.7274914383888245,
+        0.22451256215572357
+      ],
+      "params": {
+        "block_size": 177,
+        "adapt_c": 68,
+        "open_ksize": 5,
+        "erode_iters": 15,
+        "min_circularity": 0.15729334742777498,
+        "darkness_thresh": 14
+      },
+      "ceiling_f1": 0.36361648627965454
+    },
+    {
+      "file_name": "old-welding-machine-has-suddenly-started-making-a-lot-of-v0-07mwpw637nq71_jpg.rf.42bd07aa6c092c9520cec82f644694c1.jpg",
+      "image_id": 17,
+      "features": [
+        153.05018615722656,
+        54.011898040771484,
+        80.0,
+        152.0,
+        230.0,
+        150.0,
+        144.56704711914062,
+        0.06403183192014694,
+        0.4011920988559723,
+        0.20308127999305725
+      ],
+      "params": {
+        "block_size": 179,
+        "adapt_c": 35,
+        "open_ksize": 17,
+        "erode_iters": 20,
+        "min_circularity": 0.2862072661531181,
+        "darkness_thresh": 40
+      },
+      "ceiling_f1": 0.614406179138322
+    }
+  ]
+}
