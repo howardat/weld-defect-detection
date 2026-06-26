@@ -47,3 +47,18 @@ def sanitize_params(p: PoreParams) -> PoreParams:
         min_circularity=float(_clip("min_circularity", p.min_circularity)),
         darkness_thresh=int(round(_clip("darkness_thresh", p.darkness_thresh))),
     )
+
+
+def pixel_f1(gt_mask: np.ndarray, det_mask: np.ndarray) -> float:
+    gt_b = gt_mask > 0
+    det_b = det_mask > 0
+    tp = int((gt_b & det_b).sum())
+    fp = int((det_b & ~gt_b).sum())
+    fn = int((gt_b & ~det_b).sum())
+    if tp + fp == 0 and tp + fn == 0:
+        return 1.0
+    precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+    recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+    if precision + recall == 0:
+        return 0.0
+    return 2 * precision * recall / (precision + recall)
