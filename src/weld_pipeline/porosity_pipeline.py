@@ -137,3 +137,13 @@ def detection_mask(detections: list[PoreDetection], shape: tuple[int, int]) -> n
     for d in detections:
         cv2.drawContours(mask, [d.contour], -1, 255, cv2.FILLED)
     return mask
+
+
+def proxy_score(detections: list[PoreDetection]) -> float:
+    if not detections:
+        return 0.0
+    scores = [
+        d.circularity * max(0.0, d.darkness_contrast) / 255.0
+        for d in detections
+    ]
+    return float(np.mean(scores))
