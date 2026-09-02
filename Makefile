@@ -1,4 +1,4 @@
-.PHONY: run ui install help sweep plot-sweep validate-porosity porosity-light
+.PHONY: run ui install help sweep plot-sweep validate-porosity porosity-light porosity-tune-f1
 
 help:
 	@echo "Usage:"
@@ -8,7 +8,8 @@ help:
 	@echo "  make sweep              - Run discontinuity parameter sweep -> sweep_results.json"
 	@echo "  make plot-sweep         - Plot sweep results -> accuracy_surface.png"
 	@echo "  make validate-porosity  - Validate porosity module vs COCO ground truth -> confusion matrix"
-	@echo "  make porosity-light     - Run light pore detector (optional: IMG=path/to/img.jpg)"
+	@echo "  make porosity-light     - Run light pore detector (optional: IMG=path/to/img.jpg)
+	@echo "  make porosity-tune-f1   - Interactive tuner with F1 score vs test-set ground truth""
 	@echo "  make install            - Install dependencies with Poetry"
 
 run:
@@ -31,6 +32,9 @@ validate-porosity:
 
 porosity-light:
 	poetry run python src/weld_pipeline/porosity_light_check.py $(IMG)
+
+porosity-tune-f1:
+	poetry run python src/weld_pipeline/porosity_tune_f1.py
 
 install:
 	poetry install
